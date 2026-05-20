@@ -1,0 +1,96 @@
+[
+  {
+    "id": 1,
+    "category": "Business Meeting",
+    "english": "We need to finalize the agreement before the end of this week.",
+    "hindi": "हमें इस सप्ताह के अंत से पहले समझौते को अंतिम रूप देना है।",
+    "vocabulary": [
+      {
+        "word": "Finalize",
+        "meaning": "अंतिम रूप देना",
+        "pronunciation": "फाइनलाइज"
+      },
+      {
+        "word": "Agreement",
+        "meaning": "समझौता",
+        "pronunciation": "अग्रीमेंट"
+      }
+    ]
+  },
+
+  {
+    "id": 2,
+    "category": "Client Discussion",
+    "english": "The client requested a few changes in the project design.",
+    "hindi": "क्लाइंट ने प्रोजेक्ट डिज़ाइन में कुछ बदलावों का अनुरोध किया।",
+    "vocabulary": [
+      {
+        "word": "Requested",
+        "meaning": "अनुरोध किया",
+        "pronunciation": "रिक्वेस्टेड"
+      },
+      {
+        "word": "Design",
+        "meaning": "डिज़ाइन",
+        "pronunciation": "डिजाइन"
+      }
+    ]
+  },
+
+  {
+    "id": 3,
+    "category": "Leadership",
+    "english": "A good leader always motivates the team during difficult situations.",
+    "hindi": "एक अच्छा लीडर कठिन परिस्थितियों में हमेशा टीम को प्रेरित करता है।",
+    "vocabulary": [
+      {
+        "word": "Leader",
+        "meaning": "नेता",
+        "pronunciation": "लीडर"
+      },
+      {
+        "word": "Motivates",
+        "meaning": "प्रेरित करता है",
+        "pronunciation": "मोटिवेट्स"
+      }
+    ]
+  },
+
+  {
+    "id": 4,
+    "category": "Professional Communication",
+    "english": "Please share the sales report before tomorrow morning.",
+    "hindi": "कृपया कल सुबह से पहले सेल्स रिपोर्ट साझा करें।",
+    "vocabulary": [
+      {
+        "word": "Share",
+        "meaning": "साझा करना",
+        "pronunciation": "शेयर"
+      },
+      {
+        "word": "Report",
+        "meaning": "रिपोर्ट",
+        "pronunciation": "रिपोर्ट"
+      }
+    ]
+  },
+
+  {
+    "id": 5,
+    "category": "Corporate Conversation",
+    "english": "Our company is planning to expand the business internationally.",
+    "hindi": "हमारी कंपनी अंतरराष्ट्रीय स्तर पर बिजनेस का विस्तार करने की योजना बना रही है।",
+    "vocabulary": [
+      {
+        "word": "Expand",
+        "meaning": "विस्तार करना",
+        "pronunciation": "एक्सपैंड"
+      },
+      {
+        "word": "Internationally",
+        "meaning": "अंतरराष्ट्रीय स्तर पर",
+        "pronunciation": "इंटरनेशनल्ली"
+      }
+    ]
+  }
+]
