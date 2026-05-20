@@ -1,0 +1,106 @@
+[
+  {
+    "id": 1,
+    "mode": "daily",
+    "starter": "Hello! How was your day today?",
+    "translation": "नमस्ते! आपका दिन आज कैसा रहा?"
+  },
+
+  {
+    "id": 2,
+    "mode": "daily",
+    "starter": "What do you usually do after work?",
+    "translation": "आप आमतौर पर काम के बाद क्या करते हैं?"
+  },
+
+  {
+    "id": 3,
+    "mode": "daily",
+    "starter": "Tell me about your favorite hobby.",
+    "translation": "मुझे अपने पसंदीदा शौक के बारे में बताइए।"
+  },
+
+  {
+    "id": 4,
+    "mode": "daily",
+    "starter": "What are your plans for this weekend?",
+    "translation": "इस वीकेंड के लिए आपकी क्या योजनाएँ हैं?"
+  },
+
+  {
+    "id": 5,
+    "mode": "business",
+    "starter": "Can you explain your current job responsibilities?",
+    "translation": "क्या आप अपनी वर्तमान नौकरी की जिम्मेदारियों के बारे में बता सकते हैं?"
+  },
+
+  {
+    "id": 6,
+    "mode": "business",
+    "starter": "How do you usually communicate with clients?",
+    "translation": "आप आमतौर पर क्लाइंट्स से कैसे संवाद करते हैं?"
+  },
+
+  {
+    "id": 7,
+    "mode": "business",
+    "starter": "Describe a challenge you solved at work recently.",
+    "translation": "हाल ही में आपने कार्यस्थल पर कौन सी समस्या हल की?"
+  },
+
+  {
+    "id": 8,
+    "mode": "business",
+    "starter": "What skills are important for professional communication?",
+    "translation": "प्रोफेशनल कम्युनिकेशन के लिए कौन सी स्किल्स महत्वपूर्ण हैं?"
+  },
+
+  {
+    "id": 9,
+    "mode": "interview",
+    "starter": "Please introduce yourself professionally.",
+    "translation": "कृपया अपना पेशेवर परिचय दें।"
+  },
+
+  {
+    "id": 10,
+    "mode": "interview",
+    "starter": "What are your biggest strengths?",
+    "translation": "आपकी सबसे बड़ी ताकतें क्या हैं?"
+  },
+
+  {
+    "id": 11,
+    "mode": "interview",
+    "starter": "Why do you want to join this company?",
+    "translation": "आप इस कंपनी में क्यों शामिल होना चाहते हैं?"
+  },
+
+  {
+    "id": 12,
+    "mode": "interview",
+    "starter": "Where do you see yourself in the next five years?",
+    "translation": "आप अगले पाँच वर्षों में खुद को कहाँ देखते हैं?"
+  },
+
+  {
+    "id": 13,
+    "mode": "advanced",
+    "starter": "How would you handle a difficult client conversation?",
+    "translation": "आप किसी कठिन क्लाइंट बातचीत को कैसे संभालेंगे?"
+  },
+
+  {
+    "id": 14,
+    "mode": "advanced",
+    "starter": "Explain your leadership style in English.",
+    "translation": "अपनी लीडरशिप स्टाइल को अंग्रेज़ी में समझाइए।"
+  },
+
+  {
+    "id": 15,
+    "mode": "advanced",
+    "starter": "What strategies help improve business growth?",
+    "translation": "बिजनेस ग्रोथ सुधारने में कौन सी रणनीतियाँ मदद करती हैं?"
+  }
+]
