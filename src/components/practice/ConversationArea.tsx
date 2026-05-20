@@ -8,14 +8,18 @@ import {
 
 type Message = {
   id: number;
+
   role: "ai" | "user";
+
   text: string;
 };
 
 type ConversationAreaProps = {
   messages: Message[];
 
-  onSpeak?: (text: string) => void;
+  onSpeak?: (
+    text: string
+  ) => void;
 };
 
 export default function ConversationArea({
@@ -31,6 +35,7 @@ export default function ConversationArea({
         minHeight: "420px",
 
         display: "flex",
+
         flexDirection: "column",
 
         gap: "18px",
@@ -48,14 +53,16 @@ export default function ConversationArea({
             style={{
               display: "flex",
 
-              justifyContent: isAI
-                ? "flex-start"
-                : "flex-end"
+              justifyContent:
+                isAI
+                  ? "flex-start"
+                  : "flex-end"
             }}
           >
             <div
               style={{
                 width: "fit-content",
+
                 maxWidth: "85%",
 
                 padding: "16px",
@@ -73,6 +80,7 @@ export default function ConversationArea({
               <div
                 style={{
                   display: "flex",
+
                   alignItems: "center",
 
                   gap: "10px",
@@ -83,6 +91,7 @@ export default function ConversationArea({
                 <div
                   style={{
                     width: "34px",
+
                     height: "34px",
 
                     borderRadius: "12px",
@@ -92,8 +101,11 @@ export default function ConversationArea({
                       : "rgba(255,255,255,0.12)",
 
                     display: "flex",
+
                     alignItems: "center",
-                    justifyContent: "center"
+
+                    justifyContent:
+                      "center"
                   }}
                 >
                   {isAI ? (
@@ -106,6 +118,7 @@ export default function ConversationArea({
                 <span
                   style={{
                     fontSize: "14px",
+
                     fontWeight: 700,
 
                     color: "#ffffff"
@@ -134,12 +147,15 @@ export default function ConversationArea({
               {isAI && (
                 <button
                   onClick={() =>
-                    onSpeak?.(message.text)
+                    onSpeak?.(
+                      message.text
+                    )
                   }
                   style={{
                     marginTop: "14px",
 
                     width: "42px",
+
                     height: "42px",
 
                     borderRadius: "14px",
@@ -150,8 +166,11 @@ export default function ConversationArea({
                     color: "#ffffff",
 
                     display: "flex",
+
                     alignItems: "center",
-                    justifyContent: "center",
+
+                    justifyContent:
+                      "center",
 
                     transition:
                       "0.2s ease"
@@ -165,4 +184,5 @@ export default function ConversationArea({
         );
       })}
     </section>
-    }
+  );
+}
