@@ -8,7 +8,8 @@ export type ConversationMessage = {
 export type ConversationMode =
   | "daily"
   | "business"
-  | "interview";
+  | "interview"
+  | "advanced";
 
 type StartConversationParams = {
   mode?: ConversationMode;
@@ -44,13 +45,22 @@ const starters = {
     "Tell me about your strengths.",
     "Why should we hire you?",
     "Describe your professional experience."
+  ],
+
+  advanced: [
+    "Let's practice advanced English conversation.",
+    "Tell me your opinion on modern technology.",
+    "How would you explain your future goals professionally?",
+    "Describe a difficult decision you made recently."
   ]
 };
 
 export function startConversation({
   mode = "daily"
 }: StartConversationParams = {}) {
-  const list = starters[mode];
+  const list =
+    starters[mode] ||
+    starters.daily;
 
   const randomIndex = Math.floor(
     Math.random() * list.length
