@@ -1,0 +1,91 @@
+[
+  {
+    "id": 1,
+    "category": "Daily English",
+    "phrase": "How is it going?",
+    "meaning": "सब कुछ कैसा चल रहा है?",
+    "usage": "Used in casual daily conversation.",
+    "pronunciation": "हाउ इज़ इट गोइंग"
+  },
+
+  {
+    "id": 2,
+    "category": "Office English",
+    "phrase": "Let's schedule a meeting.",
+    "meaning": "आइए एक मीटिंग शेड्यूल करें।",
+    "usage": "Used for professional communication.",
+    "pronunciation": "लेट्स शेड्यूल अ मीटिंग"
+  },
+
+  {
+    "id": 3,
+    "category": "Business Communication",
+    "phrase": "Please share your feedback.",
+    "meaning": "कृपया अपनी प्रतिक्रिया साझा करें।",
+    "usage": "Used in business discussions and meetings.",
+    "pronunciation": "प्लीज शेयर योर फीडबैक"
+  },
+
+  {
+    "id": 4,
+    "category": "Interview English",
+    "phrase": "I am confident in my skills.",
+    "meaning": "मुझे अपनी क्षमताओं पर विश्वास है।",
+    "usage": "Used during interviews and introductions.",
+    "pronunciation": "आई एम कॉन्फिडेंट इन माई स्किल्स"
+  },
+
+  {
+    "id": 5,
+    "category": "Client Communication",
+    "phrase": "Thank you for your patience.",
+    "meaning": "आपके धैर्य के लिए धन्यवाद।",
+    "usage": "Used while communicating professionally with clients.",
+    "pronunciation": "थैंक यू फॉर योर पेशंस"
+  },
+
+  {
+    "id": 6,
+    "category": "Team Communication",
+    "phrase": "Let's work together on this project.",
+    "meaning": "आइए इस प्रोजेक्ट पर मिलकर काम करें।",
+    "usage": "Used during teamwork discussions.",
+    "pronunciation": "लेट्स वर्क टुगेदर ऑन दिस प्रोजेक्ट"
+  },
+
+  {
+    "id": 7,
+    "category": "Professional Speaking",
+    "phrase": "Could you explain that again?",
+    "meaning": "क्या आप इसे फिर से समझा सकते हैं?",
+    "usage": "Used when clarification is needed.",
+    "pronunciation": "कुड यू एक्सप्लेन दैट अगेन"
+  },
+
+  {
+    "id": 8,
+    "category": "Presentation English",
+    "phrase": "Let me share my screen.",
+    "meaning": "मुझे अपनी स्क्रीन साझा करने दें।",
+    "usage": "Used in online meetings and presentations.",
+    "pronunciation": "लेट मी शेयर माई स्क्रीन"
+  },
+
+  {
+    "id": 9,
+    "category": "Corporate English",
+    "phrase": "We need a better strategy.",
+    "meaning": "हमें एक बेहतर रणनीति की आवश्यकता है।",
+    "usage": "Used during business planning discussions.",
+    "pronunciation": "वी नीड अ बेटर स्ट्रेटेजी"
+  },
+
+  {
+    "id": 10,
+    "category": "Motivation",
+    "phrase": "Practice makes you fluent.",
+    "meaning": "अभ्यास आपको धाराप्रवाह बनाता है।",
+    "usage": "Used for learner motivation.",
+    "pronunciation": "प्रैक्टिस मेक्स यू फ्लुएंट"
+  }
+]
