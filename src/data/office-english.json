@@ -1,0 +1,96 @@
+[
+  {
+    "id": 1,
+    "category": "Office Meeting",
+    "english": "Let us discuss the project updates during today's meeting.",
+    "hindi": "आइए आज की मीटिंग में प्रोजेक्ट अपडेट्स पर चर्चा करें।",
+    "vocabulary": [
+      {
+        "word": "Discuss",
+        "meaning": "चर्चा करना",
+        "pronunciation": "डिस्कस"
+      },
+      {
+        "word": "Updates",
+        "meaning": "अपडेट्स",
+        "pronunciation": "अपडेट्स"
+      }
+    ]
+  },
+
+  {
+    "id": 2,
+    "category": "Client Communication",
+    "english": "I will send the revised quotation by this evening.",
+    "hindi": "मैं आज शाम तक संशोधित कोटेशन भेज दूँगा।",
+    "vocabulary": [
+      {
+        "word": "Revised",
+        "meaning": "संशोधित",
+        "pronunciation": "रिवाइज्ड"
+      },
+      {
+        "word": "Quotation",
+        "meaning": "कोटेशन",
+        "pronunciation": "कोटेशन"
+      }
+    ]
+  },
+
+  {
+    "id": 3,
+    "category": "Teamwork",
+    "english": "Our team completed the task before the deadline.",
+    "hindi": "हमारी टीम ने समय सीमा से पहले कार्य पूरा कर लिया।",
+    "vocabulary": [
+      {
+        "word": "Completed",
+        "meaning": "पूरा किया",
+        "pronunciation": "कम्प्लीटेड"
+      },
+      {
+        "word": "Deadline",
+        "meaning": "समय सीमा",
+        "pronunciation": "डेडलाइन"
+      }
+    ]
+  },
+
+  {
+    "id": 4,
+    "category": "Professional Email",
+    "english": "Please find the attached document for your reference.",
+    "hindi": "कृपया संदर्भ के लिए संलग्न दस्तावेज़ देखें।",
+    "vocabulary": [
+      {
+        "word": "Attached",
+        "meaning": "संलग्न",
+        "pronunciation": "अटैच्ड"
+      },
+      {
+        "word": "Reference",
+        "meaning": "संदर्भ",
+        "pronunciation": "रेफरेंस"
+      }
+    ]
+  },
+
+  {
+    "id": 5,
+    "category": "Presentation",
+    "english": "I am preparing a presentation for tomorrow's client meeting.",
+    "hindi": "मैं कल की क्लाइंट मीटिंग के लिए एक प्रेजेंटेशन तैयार कर रहा हूँ।",
+    "vocabulary": [
+      {
+        "word": "Preparing",
+        "meaning": "तैयार करना",
+        "pronunciation": "प्रिपेयरिंग"
+      },
+      {
+        "word": "Presentation",
+        "meaning": "प्रेजेंटेशन",
+        "pronunciation": "प्रेजेंटेशन"
+      }
+    ]
+  }
+]
