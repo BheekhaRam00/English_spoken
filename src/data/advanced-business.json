@@ -1,0 +1,146 @@
+[
+  {
+    "id": 1,
+    "category": "Negotiation",
+    "sentence": "We are looking for a long-term business partnership with your company.",
+    "translation": "हम आपकी कंपनी के साथ एक दीर्घकालिक व्यापारिक साझेदारी चाहते हैं।",
+    "vocabulary": [
+      {
+        "word": "Partnership",
+        "meaning": "साझेदारी",
+        "pronunciation": "पार्टनरशिप"
+      },
+      {
+        "word": "Long-term",
+        "meaning": "दीर्घकालिक",
+        "pronunciation": "लॉन्ग टर्म"
+      }
+    ],
+    "phrases": [
+      {
+        "phrase": "business partnership",
+        "meaning": "व्यापारिक साझेदारी"
+      },
+      {
+        "phrase": "long-term relationship",
+        "meaning": "लंबे समय का संबंध"
+      }
+    ]
+  },
+
+  {
+    "id": 2,
+    "category": "Corporate Meeting",
+    "sentence": "The management team will review the quarterly performance tomorrow.",
+    "translation": "मैनेजमेंट टीम कल त्रैमासिक प्रदर्शन की समीक्षा करेगी।",
+    "vocabulary": [
+      {
+        "word": "Management",
+        "meaning": "प्रबंधन",
+        "pronunciation": "मैनेजमेंट"
+      },
+      {
+        "word": "Quarterly",
+        "meaning": "त्रैमासिक",
+        "pronunciation": "क्वार्टरली"
+      }
+    ],
+    "phrases": [
+      {
+        "phrase": "review performance",
+        "meaning": "प्रदर्शन की समीक्षा करना"
+      },
+      {
+        "phrase": "management team",
+        "meaning": "प्रबंधन टीम"
+      }
+    ]
+  },
+
+  {
+    "id": 3,
+    "category": "Client Communication",
+    "sentence": "We appreciate your valuable feedback regarding our services.",
+    "translation": "हमारी सेवाओं के संबंध में आपकी महत्वपूर्ण प्रतिक्रिया की हम सराहना करते हैं।",
+    "vocabulary": [
+      {
+        "word": "Appreciate",
+        "meaning": "सराहना करना",
+        "pronunciation": "अप्रिशिएट"
+      },
+      {
+        "word": "Valuable",
+        "meaning": "महत्वपूर्ण",
+        "pronunciation": "वैल्यूएबल"
+      }
+    ],
+    "phrases": [
+      {
+        "phrase": "valuable feedback",
+        "meaning": "महत्वपूर्ण प्रतिक्रिया"
+      },
+      {
+        "phrase": "regarding our services",
+        "meaning": "हमारी सेवाओं के संबंध में"
+      }
+    ]
+  },
+
+  {
+    "id": 4,
+    "category": "Presentation Skills",
+    "sentence": "I would like to highlight the key benefits of this proposal.",
+    "translation": "मैं इस प्रस्ताव के मुख्य लाभों को उजागर करना चाहूँगा।",
+    "vocabulary": [
+      {
+        "word": "Highlight",
+        "meaning": "उजागर करना",
+        "pronunciation": "हाइलाइट"
+      },
+      {
+        "word": "Proposal",
+        "meaning": "प्रस्ताव",
+        "pronunciation": "प्रपोजल"
+      }
+    ],
+    "phrases": [
+      {
+        "phrase": "key benefits",
+        "meaning": "मुख्य लाभ"
+      },
+      {
+        "phrase": "business proposal",
+        "meaning": "व्यावसायिक प्रस्ताव"
+      }
+    ]
+  },
+
+  {
+    "id": 5,
+    "category": "Leadership Communication",
+    "sentence": "Effective communication is essential for successful leadership.",
+    "translation": "सफल नेतृत्व के लिए प्रभावी संचार आवश्यक है।",
+    "vocabulary": [
+      {
+        "word": "Effective",
+        "meaning": "प्रभावी",
+        "pronunciation": "इफेक्टिव"
+      },
+      {
+        "word": "Leadership",
+        "meaning": "नेतृत्व",
+        "pronunciation": "लीडरशिप"
+      }
+    ],
+    "phrases": [
+      {
+        "phrase": "effective communication",
+        "meaning": "प्रभावी संचार"
+      },
+      {
+        "phrase": "successful leadership",
+        "meaning": "सफल नेतृत्व"
+      }
+    ]
+  }
+]
