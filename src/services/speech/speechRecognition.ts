@@ -52,6 +52,23 @@ let recognition:
   | CustomSpeechRecognition
   | null = null;
 
+export function isSpeechRecognitionSupported() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return false;
+  }
+
+  const browserWindow =
+    window as BrowserWindow;
+
+  return Boolean(
+    browserWindow.SpeechRecognition ||
+      browserWindow.webkitSpeechRecognition
+  );
+}
+
 export function startSpeechRecognition({
   onStart,
   onEnd,
