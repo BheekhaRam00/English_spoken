@@ -47,13 +47,11 @@ interface SpeechRecognitionConstructor {
   new (): SpeechRecognitionInstance;
 }
 
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor;
+type BrowserWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
 
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  }
-}
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
 
 export default function RepeatPractice({
   sentence,
@@ -76,9 +74,12 @@ export default function RepeatPractice({
       return;
     }
 
+    const browserWindow =
+      window as BrowserWindow;
+
     const SpeechRecognitionAPI =
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition;
+      browserWindow.SpeechRecognition ||
+      browserWindow.webkitSpeechRecognition;
 
     if (!SpeechRecognitionAPI) {
       alert(
