@@ -1,0 +1,81 @@
+[
+  {
+    "id": 1,
+    "title": "Speak Slowly",
+    "description": "Start by speaking slowly and clearly instead of speaking very fast.",
+    "example": "I would like to improve my communication skills.",
+    "tip": "Clear pronunciation is more important than speed."
+  },
+
+  {
+    "id": 2,
+    "title": "Focus on Word Stress",
+    "description": "English words often have one stressed syllable. Stress improves natural speaking.",
+    "example": "com-MU-ni-ca-tion",
+    "tip": "Listen carefully and repeat the stressed part louder."
+  },
+
+  {
+    "id": 3,
+    "title": "Practice Daily",
+    "description": "Daily speaking practice improves fluency and confidence naturally.",
+    "example": "Practice speaking English for at least 10 minutes daily.",
+    "tip": "Consistency creates faster improvement."
+  },
+
+  {
+    "id": 4,
+    "title": "Use Business Vocabulary",
+    "description": "Learning professional vocabulary improves workplace communication.",
+    "example": "We need to schedule a client meeting tomorrow.",
+    "tip": "Repeat professional phrases regularly."
+  },
+
+  {
+    "id": 5,
+    "title": "Listen Before Speaking",
+    "description": "Carefully listening to pronunciation improves speaking accuracy.",
+    "example": "Please share the updated sales report.",
+    "tip": "Listen two times before repeating."
+  },
+
+  {
+    "id": 6,
+    "title": "Practice Full Sentences",
+    "description": "Speaking complete sentences builds natural conversation flow.",
+    "example": "I am preparing for an important business presentation.",
+    "tip": "Avoid translating word-by-word from Hindi."
+  },
+
+  {
+    "id": 7,
+    "title": "Improve Confidence",
+    "description": "Confidence makes spoken English sound more natural and professional.",
+    "example": "I can communicate effectively in English.",
+    "tip": "Do not fear mistakes while speaking."
+  },
+
+  {
+    "id": 8,
+    "title": "Repeat Difficult Words",
+    "description": "Repeating difficult vocabulary improves pronunciation memory.",
+    "example": "Professional, Communication, Opportunity",
+    "tip": "Practice difficult words separately first."
+  },
+
+  {
+    "id": 9,
+    "title": "Use Natural Pauses",
+    "description": "Small pauses make your English clearer and easier to understand.",
+    "example": "Good morning, everyone. Today, I will explain our project progress.",
+    "tip": "Pause slightly after commas and full stops."
+  },
+
+  {
+    "id": 10,
+    "title": "Think in English",
+    "description": "Thinking directly in English improves fluency faster.",
+    "example": "Instead of translating mentally, respond naturally in English.",
+    "tip": "Start with small daily thoughts in English."
+  }
+]
