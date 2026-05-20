@@ -1,0 +1,96 @@
+[
+  {
+    "id": 1,
+    "category": "Morning Routine",
+    "english": "I usually wake up early and go for a short walk.",
+    "hindi": "मैं आमतौर पर जल्दी उठता हूँ और थोड़ी देर टहलने जाता हूँ।",
+    "vocabulary": [
+      {
+        "word": "Usually",
+        "meaning": "आमतौर पर",
+        "pronunciation": "यूजुअली"
+      },
+      {
+        "word": "Walk",
+        "meaning": "टहलना",
+        "pronunciation": "वॉक"
+      }
+    ]
+  },
+
+  {
+    "id": 2,
+    "category": "Friends Conversation",
+    "english": "We are planning to watch a movie this weekend.",
+    "hindi": "हम इस वीकेंड एक फिल्म देखने की योजना बना रहे हैं।",
+    "vocabulary": [
+      {
+        "word": "Planning",
+        "meaning": "योजना बनाना",
+        "pronunciation": "प्लानिंग"
+      },
+      {
+        "word": "Weekend",
+        "meaning": "सप्ताहांत",
+        "pronunciation": "वीकेंड"
+      }
+    ]
+  },
+
+  {
+    "id": 3,
+    "category": "Travel Conversation",
+    "english": "How long does it take to reach the railway station?",
+    "hindi": "रेलवे स्टेशन पहुँचने में कितना समय लगता है?",
+    "vocabulary": [
+      {
+        "word": "Reach",
+        "meaning": "पहुँचना",
+        "pronunciation": "रीच"
+      },
+      {
+        "word": "Station",
+        "meaning": "स्टेशन",
+        "pronunciation": "स्टेशन"
+      }
+    ]
+  },
+
+  {
+    "id": 4,
+    "category": "Shopping",
+    "english": "I would like to buy a comfortable office chair.",
+    "hindi": "मैं एक आरामदायक ऑफिस चेयर खरीदना चाहता हूँ।",
+    "vocabulary": [
+      {
+        "word": "Comfortable",
+        "meaning": "आरामदायक",
+        "pronunciation": "कम्फर्टेबल"
+      },
+      {
+        "word": "Chair",
+        "meaning": "कुर्सी",
+        "pronunciation": "चेयर"
+      }
+    ]
+  },
+
+  {
+    "id": 5,
+    "category": "Restaurant Conversation",
+    "english": "Could you please bring the menu card?",
+    "hindi": "क्या आप कृपया मेन्यू कार्ड ला सकते हैं?",
+    "vocabulary": [
+      {
+        "word": "Menu",
+        "meaning": "मेन्यू",
+        "pronunciation": "मेन्यू"
+      },
+      {
+        "word": "Bring",
+        "meaning": "लाना",
+        "pronunciation": "ब्रिंग"
+      }
+    ]
+  }
+]
