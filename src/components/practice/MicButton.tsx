@@ -42,9 +42,11 @@ export default function MicButton({
         padding: "28px",
 
         display: "flex",
+
         flexDirection: "column",
 
         alignItems: "center",
+
         justifyContent: "center"
       }}
     >
@@ -58,6 +60,7 @@ export default function MicButton({
         }
         style={{
           width: "96px",
+
           height: "96px",
 
           borderRadius: "999px",
@@ -69,7 +72,9 @@ export default function MicButton({
           color: "#ffffff",
 
           display: "flex",
+
           alignItems: "center",
+
           justifyContent: "center",
 
           boxShadow:
@@ -78,7 +83,8 @@ export default function MicButton({
           transition:
             "transform 0.2s ease, opacity 0.2s ease",
 
-          opacity: disabled ? 0.5 : 1,
+          opacity:
+            disabled ? 0.5 : 1,
 
           cursor: disabled
             ? "not-allowed"
@@ -114,7 +120,8 @@ export default function MicButton({
         style={{
           marginTop: "20px",
 
-          color: "rgba(255,255,255,0.74)",
+          color:
+            "rgba(255,255,255,0.74)",
 
           lineHeight: 1.7,
 
@@ -128,4 +135,5 @@ export default function MicButton({
           : "Tap the microphone and start speaking."}
       </p>
     </section>
-    }
+  );
+}
