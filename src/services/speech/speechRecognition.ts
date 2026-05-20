@@ -24,7 +24,9 @@ interface CustomSpeechRecognition {
     | null;
 
   onerror:
-    | (() => void)
+    | ((
+        error?: unknown
+      ) => void)
     | null;
 
   onresult:
@@ -79,7 +81,9 @@ export function startSpeechRecognition({
 
   onEnd?: () => void;
 
-  onError?: () => void;
+  onError?: (
+    error?: unknown
+  ) => void;
 
   onResult?: (
     transcript: string
@@ -130,8 +134,10 @@ export function startSpeechRecognition({
     onEnd?.();
   };
 
-  recognition.onerror = () => {
-    onError?.();
+  recognition.onerror = (
+    error
+  ) => {
+    onError?.(error);
   };
 
   recognition.onresult = (
