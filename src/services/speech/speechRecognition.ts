@@ -71,24 +71,31 @@ export function isSpeechRecognitionSupported() {
   );
 }
 
+type StartSpeechRecognitionParams =
+  {
+    language?: string;
+
+    onStart?: () => void;
+
+    onEnd?: () => void;
+
+    onError?: (
+      error?: unknown
+    ) => void;
+
+    onResult?: (
+      transcript: string
+    ) => void;
+  };
+
 export function startSpeechRecognition({
+  language = "en-US",
+
   onStart,
   onEnd,
   onError,
   onResult
-}: {
-  onStart?: () => void;
-
-  onEnd?: () => void;
-
-  onError?: (
-    error?: unknown
-  ) => void;
-
-  onResult?: (
-    transcript: string
-  ) => void;
-}) {
+}: StartSpeechRecognitionParams) {
   if (
     typeof window ===
     "undefined"
@@ -115,7 +122,7 @@ export function startSpeechRecognition({
     new SpeechRecognitionAPI();
 
   recognition.lang =
-    "en-US";
+    language;
 
   recognition.continuous =
     false;
