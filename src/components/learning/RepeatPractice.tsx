@@ -115,7 +115,7 @@ export default function RepeatPractice({
     };
 
     recognition.onresult = (
-      event
+      event: SpeechRecognitionEvent
     ) => {
       const transcript =
         event.results[0][0]
