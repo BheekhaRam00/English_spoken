@@ -1,0 +1,96 @@
+[
+  {
+    "id": 1,
+    "category": "Basic Introduction",
+    "english": "Hello, my name is Rahul and I work in a furniture company.",
+    "hindi": "नमस्ते, मेरा नाम राहुल है और मैं एक फर्नीचर कंपनी में काम करता हूँ।",
+    "vocabulary": [
+      {
+        "word": "Furniture",
+        "meaning": "फर्नीचर",
+        "pronunciation": "फर्नीचर"
+      },
+      {
+        "word": "Company",
+        "meaning": "कंपनी",
+        "pronunciation": "कम्पनी"
+      }
+    ]
+  },
+
+  {
+    "id": 2,
+    "category": "Daily Conversation",
+    "english": "I usually start my work at 9 o'clock in the morning.",
+    "hindi": "मैं आमतौर पर सुबह 9 बजे अपना काम शुरू करता हूँ।",
+    "vocabulary": [
+      {
+        "word": "Usually",
+        "meaning": "आमतौर पर",
+        "pronunciation": "यूजुअली"
+      },
+      {
+        "word": "Morning",
+        "meaning": "सुबह",
+        "pronunciation": "मॉर्निंग"
+      }
+    ]
+  },
+
+  {
+    "id": 3,
+    "category": "Speaking Practice",
+    "english": "I want to improve my spoken English confidence.",
+    "hindi": "मैं अपनी स्पोकन इंग्लिश कॉन्फिडेंस सुधारना चाहता हूँ।",
+    "vocabulary": [
+      {
+        "word": "Improve",
+        "meaning": "सुधारना",
+        "pronunciation": "इम्प्रूव"
+      },
+      {
+        "word": "Confidence",
+        "meaning": "आत्मविश्वास",
+        "pronunciation": "कॉन्फिडेंस"
+      }
+    ]
+  },
+
+  {
+    "id": 4,
+    "category": "Office English",
+    "english": "Please send me the project details by email.",
+    "hindi": "कृपया मुझे प्रोजेक्ट की जानकारी ईमेल द्वारा भेजें।",
+    "vocabulary": [
+      {
+        "word": "Project",
+        "meaning": "प्रोजेक्ट",
+        "pronunciation": "प्रोजेक्ट"
+      },
+      {
+        "word": "Details",
+        "meaning": "विवरण",
+        "pronunciation": "डिटेल्स"
+      }
+    ]
+  },
+
+  {
+    "id": 5,
+    "category": "Communication",
+    "english": "Thank you for your support and cooperation.",
+    "hindi": "आपके सहयोग और समर्थन के लिए धन्यवाद।",
+    "vocabulary": [
+      {
+        "word": "Support",
+        "meaning": "समर्थन",
+        "pronunciation": "सपोर्ट"
+      },
+      {
+        "word": "Cooperation",
+        "meaning": "सहयोग",
+        "pronunciation": "कोऑपरेशन"
+      }
+    ]
+  }
+]
