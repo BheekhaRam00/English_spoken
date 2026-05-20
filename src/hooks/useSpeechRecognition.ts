@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 
 import {
   startSpeechRecognition,
@@ -8,50 +13,49 @@ import {
   isSpeechRecognitionSupported
 } from "@/services/speech/speechRecognition";
 
-type UseSpeechRecognitionOptions = {
-  language?: string;
+type UseSpeechRecognitionOptions =
+  {
+    language?: string;
 
-  onTranscript?: (
-    transcript: string
-  ) => void;
-
-  onError?: (
-    error: string
-  ) => void;
-};
+    continuous?: boolean;
+  };
 
 export default function useSpeechRecognition({
-  language = "en-US",
-
-  onTranscript,
-
-  onError
+  language = "en-US"
 }: UseSpeechRecognitionOptions = {}) {
-  const [isListening, setIsListening] =
-    useState(false);
+  const [
+    transcript,
+    setTranscript
+  ] = useState("");
 
-  const [transcript, setTranscript] =
-    useState("");
-
-  const [confidence, setConfidence] =
-    useState(0);
+  const [
+    isListening,
+    setIsListening
+  ] = useState(false);
 
   const [error, setError] =
     useState("");
 
-  const mountedRef = useRef(true);
+  const mountedRef =
+    useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current =
+        false;
+
+      stopSpeechRecognition();
+    };
+  }, []);
 
   const startListening =
     useCallback(() => {
       if (
         !isSpeechRecognitionSupported()
       ) {
-        const message =
-          "Speech recognition is not supported on this device.";
-
-        setError(message);
-
-        onError?.(message);
+        setError(
+          "Speech recognition is not supported on this device."
+        );
 
         return;
       }
@@ -62,7 +66,9 @@ export default function useSpeechRecognition({
         language,
 
         onStart: () => {
-          if (!mountedRef.current) {
+          if (
+            !mountedRef.current
+          ) {
             return;
           }
 
@@ -70,7 +76,9 @@ export default function useSpeechRecognition({
         },
 
         onEnd: () => {
-          if (!mountedRef.current) {
+          if (
+            !mountedRef.current
+          ) {
             return;
           }
 
@@ -80,72 +88,63 @@ export default function useSpeechRecognition({
         onError: (
           recognitionError
         ) => {
-          if (!mountedRef.current) {
+          if (
+            !mountedRef.current
+          ) {
             return;
           }
 
           setError(
-            recognitionError
+            recognitionError instanceof
+              Error
+              ? recognitionError.message
+              : "Speech recognition error"
           );
 
           setIsListening(false);
-
-          onError?.(
-            recognitionError
-          );
         },
 
-        onResult: (result) => {
-          if (!mountedRef.current) {
+        onResult: (
+          resultTranscript
+        ) => {
+          if (
+            !mountedRef.current
+          ) {
             return;
           }
 
           setTranscript(
-            result.transcript
-          );
-
-          setConfidence(
-            result.confidence || 0
-          );
-
-          onTranscript?.(
-            result.transcript
+            resultTranscript
           );
         }
       });
-    }, [
-      language,
-      onTranscript,
-      onError
-    ]);
+    }, [language]);
 
   const stopListening =
     useCallback(() => {
       stopSpeechRecognition();
 
-      setIsListening(false);
+      if (
+        mountedRef.current
+      ) {
+        setIsListening(false);
+      }
     }, []);
 
   const resetTranscript =
     useCallback(() => {
       setTranscript("");
-
-      setConfidence(0);
-
-      setError("");
     }, []);
 
   return {
-    supported:
-      isSpeechRecognitionSupported(),
+    transcript,
 
     isListening,
 
-    transcript,
-
-    confidence,
-
     error,
+
+    supported:
+      isSpeechRecognitionSupported(),
 
     startListening,
 
