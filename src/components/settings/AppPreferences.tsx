@@ -14,7 +14,7 @@ import {
 
 import {
   SettingsEngine
-} from "@/lib/settings-engine";
+} from "@/lib/settingsEngine";
 
 export default function AppPreferences() {
   const settingsEngine =
@@ -40,6 +40,19 @@ export default function AppPreferences() {
     setAutoSpeak(
       settings.autoSpeak
     );
+
+    const storedNotifications =
+      localStorage.getItem(
+        "notifications"
+      );
+
+    if (storedNotifications) {
+      setNotifications(
+        JSON.parse(
+          storedNotifications
+        )
+      );
+    }
   }, []);
 
   const toggleDarkMode =
@@ -53,30 +66,28 @@ export default function AppPreferences() {
 
   const toggleNotifications =
     () => {
+      const updated =
+        !notifications;
+
       setNotifications(
-        !notifications
+        updated
       );
 
       localStorage.setItem(
         "notifications",
         JSON.stringify(
-          !notifications
+          updated
         )
       );
     };
 
   const toggleAutoSpeak =
     () => {
-      const updated =
-        !autoSpeak;
-
       setAutoSpeak(
-        updated
+        !autoSpeak
       );
 
-      settingsEngine.updateAutoSpeak(
-        updated
-      );
+      settingsEngine.toggleAutoSpeak();
     };
 
   const ToggleSwitch = ({
@@ -87,17 +98,12 @@ export default function AppPreferences() {
     <div
       style={{
         width: "56px",
-
         height: "32px",
-
         borderRadius: "999px",
-
         background: active
           ? "#2563eb"
           : "rgba(255,255,255,0.18)",
-
         position: "relative",
-
         transition:
           "0.2s ease"
       }}
@@ -105,24 +111,17 @@ export default function AppPreferences() {
       <div
         style={{
           width: "24px",
-
           height: "24px",
-
           borderRadius:
             "50%",
-
           background:
             "#ffffff",
-
           position:
             "absolute",
-
           top: "4px",
-
           left: active
             ? "28px"
             : "4px",
-
           transition:
             "0.2s ease"
         }}
@@ -140,12 +139,9 @@ export default function AppPreferences() {
       <div
         style={{
           display: "flex",
-
           alignItems:
             "center",
-
           gap: "12px",
-
           marginBottom:
             "24px"
         }}
@@ -159,7 +155,6 @@ export default function AppPreferences() {
             style={{
               fontSize:
                 "26px",
-
               marginBottom:
                 "4px"
             }}
@@ -182,9 +177,7 @@ export default function AppPreferences() {
       <div
         style={{
           display: "grid",
-
           gap: "18px",
-
           marginBottom:
             "24px"
         }}
@@ -195,22 +188,16 @@ export default function AppPreferences() {
           }
           style={{
             display: "flex",
-
             alignItems:
               "center",
-
             justifyContent:
               "space-between",
-
             background:
               "rgba(255,255,255,0.05)",
-
             borderRadius:
               "22px",
-
             padding:
               "20px",
-
             color:
               "#ffffff"
           }}
@@ -219,32 +206,24 @@ export default function AppPreferences() {
             style={{
               display:
                 "flex",
-
               alignItems:
                 "center",
-
               gap: "16px"
             }}
           >
             <div
               style={{
                 width: "54px",
-
                 height:
                   "54px",
-
                 borderRadius:
                   "18px",
-
                 display:
                   "flex",
-
                 alignItems:
                   "center",
-
                 justifyContent:
                   "center",
-
                 background:
                   "linear-gradient(135deg, rgba(147,51,234,0.18), rgba(37,99,235,0.18))"
               }}
@@ -264,7 +243,6 @@ export default function AppPreferences() {
                 style={{
                   marginBottom:
                     "4px",
-
                   fontSize:
                     "20px"
                 }}
@@ -276,7 +254,6 @@ export default function AppPreferences() {
                 style={{
                   color:
                     "rgba(255,255,255,0.68)",
-
                   lineHeight:
                     1.6
                 }}
@@ -299,22 +276,16 @@ export default function AppPreferences() {
           }
           style={{
             display: "flex",
-
             alignItems:
               "center",
-
             justifyContent:
               "space-between",
-
             background:
               "rgba(255,255,255,0.05)",
-
             borderRadius:
               "22px",
-
             padding:
               "20px",
-
             color:
               "#ffffff"
           }}
@@ -323,32 +294,24 @@ export default function AppPreferences() {
             style={{
               display:
                 "flex",
-
               alignItems:
                 "center",
-
               gap: "16px"
             }}
           >
             <div
               style={{
                 width: "54px",
-
                 height:
                   "54px",
-
                 borderRadius:
                   "18px",
-
                 display:
                   "flex",
-
                 alignItems:
                   "center",
-
                 justifyContent:
                   "center",
-
                 background:
                   "linear-gradient(135deg, rgba(147,51,234,0.18), rgba(37,99,235,0.18))"
               }}
@@ -368,7 +331,6 @@ export default function AppPreferences() {
                 style={{
                   marginBottom:
                     "4px",
-
                   fontSize:
                     "20px"
                 }}
@@ -380,7 +342,6 @@ export default function AppPreferences() {
                 style={{
                   color:
                     "rgba(255,255,255,0.68)",
-
                   lineHeight:
                     1.6
                 }}
@@ -403,22 +364,16 @@ export default function AppPreferences() {
           }
           style={{
             display: "flex",
-
             alignItems:
               "center",
-
             justifyContent:
               "space-between",
-
             background:
               "rgba(255,255,255,0.05)",
-
             borderRadius:
               "22px",
-
             padding:
               "20px",
-
             color:
               "#ffffff"
           }}
@@ -427,32 +382,24 @@ export default function AppPreferences() {
             style={{
               display:
                 "flex",
-
               alignItems:
                 "center",
-
               gap: "16px"
             }}
           >
             <div
               style={{
                 width: "54px",
-
                 height:
                   "54px",
-
                 borderRadius:
                   "18px",
-
                 display:
                   "flex",
-
                 alignItems:
                   "center",
-
                 justifyContent:
                   "center",
-
                 background:
                   "linear-gradient(135deg, rgba(147,51,234,0.18), rgba(37,99,235,0.18))"
               }}
@@ -472,7 +419,6 @@ export default function AppPreferences() {
                 style={{
                   marginBottom:
                     "4px",
-
                   fontSize:
                     "20px"
                 }}
@@ -484,7 +430,6 @@ export default function AppPreferences() {
                 style={{
                   color:
                     "rgba(255,255,255,0.68)",
-
                   lineHeight:
                     1.6
                 }}
@@ -505,7 +450,6 @@ export default function AppPreferences() {
       <div
         style={{
           display: "grid",
-
           gap: "16px"
         }}
       >
@@ -513,7 +457,6 @@ export default function AppPreferences() {
           className="glass-card"
           style={{
             padding: "20px",
-
             background:
               "rgba(255,255,255,0.05)"
           }}
@@ -521,10 +464,8 @@ export default function AppPreferences() {
           <div
             style={{
               display: "flex",
-
               alignItems:
                 "center",
-
               justifyContent:
                 "space-between"
             }}
@@ -533,10 +474,8 @@ export default function AppPreferences() {
               style={{
                 display:
                   "flex",
-
                 alignItems:
                   "center",
-
                 gap: "14px"
               }}
             >
@@ -549,7 +488,6 @@ export default function AppPreferences() {
                   style={{
                     marginBottom:
                       "4px",
-
                     fontSize:
                       "18px"
                   }}
@@ -578,7 +516,6 @@ export default function AppPreferences() {
           className="glass-card"
           style={{
             padding: "20px",
-
             background:
               "rgba(255,255,255,0.05)"
           }}
@@ -586,10 +523,8 @@ export default function AppPreferences() {
           <div
             style={{
               display: "flex",
-
               alignItems:
                 "center",
-
               justifyContent:
                 "space-between"
             }}
@@ -598,10 +533,8 @@ export default function AppPreferences() {
               style={{
                 display:
                   "flex",
-
                 alignItems:
                   "center",
-
                 gap: "14px"
               }}
             >
@@ -614,7 +547,6 @@ export default function AppPreferences() {
                   style={{
                     marginBottom:
                       "4px",
-
                     fontSize:
                       "18px"
                   }}
@@ -641,4 +573,4 @@ export default function AppPreferences() {
       </div>
     </div>
   );
-              }
+}
