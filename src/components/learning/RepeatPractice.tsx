@@ -1,6 +1,10 @@
 "use client";
 
-import { Mic, RotateCcw } from "lucide-react";
+import {
+  Mic,
+  RotateCcw
+} from "lucide-react";
+
 import { useState } from "react";
 
 type RepeatPracticeProps = {
@@ -9,15 +13,45 @@ type RepeatPracticeProps = {
   onReplay?: () => void;
 };
 
+interface SpeechRecognitionEvent {
+  results: {
+    [key: number]: {
+      transcript: string;
+    }[];
+  };
+}
+
+interface SpeechRecognitionInstance {
+  lang: string;
+
+  interimResults: boolean;
+
+  maxAlternatives: number;
+
+  onstart: (() => void) | null;
+
+  onend: (() => void) | null;
+
+  onerror: (() => void) | null;
+
+  onresult:
+    | ((
+        event: SpeechRecognitionEvent
+      ) => void)
+    | null;
+
+  start: () => void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognitionInstance;
+}
+
 declare global {
   interface Window {
-    SpeechRecognition:
-      | typeof SpeechRecognition
-      | undefined;
+    SpeechRecognition?: SpeechRecognitionConstructor;
 
-    webkitSpeechRecognition:
-      | typeof SpeechRecognition
-      | undefined;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
   }
 }
 
@@ -35,6 +69,13 @@ export default function RepeatPractice({
     useState("");
 
   const startListening = () => {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return;
+    }
+
     const SpeechRecognitionAPI =
       window.SpeechRecognition ||
       window.webkitSpeechRecognition;
@@ -72,13 +113,20 @@ export default function RepeatPractice({
       );
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (
+      event
+    ) => {
       const transcript =
-        event.results[0][0].transcript;
+        event.results[0][0]
+          .transcript;
 
-      setUserSpeech(transcript);
+      setUserSpeech(
+        transcript
+      );
 
-      generateFeedback(transcript);
+      generateFeedback(
+        transcript
+      );
     };
 
     recognition.start();
@@ -130,6 +178,7 @@ export default function RepeatPractice({
       <div
         style={{
           display: "flex",
+
           alignItems: "center",
 
           gap: "12px",
@@ -142,6 +191,7 @@ export default function RepeatPractice({
         <h3
           style={{
             fontSize: "24px",
+
             fontWeight: 700
           }}
         >
@@ -151,7 +201,8 @@ export default function RepeatPractice({
 
       <p
         style={{
-          color: "rgba(255,255,255,0.76)",
+          color:
+            "rgba(255,255,255,0.76)",
 
           lineHeight: 1.8,
 
@@ -186,23 +237,32 @@ export default function RepeatPractice({
       <div
         style={{
           display: "grid",
+
           gap: "14px"
         }}
       >
         <button
-          onClick={startListening}
-          disabled={isListening}
+          onClick={
+            startListening
+          }
+          disabled={
+            isListening
+          }
           className="primary-button"
           style={{
             display: "flex",
+
             alignItems: "center",
-            justifyContent: "center",
+
+            justifyContent:
+              "center",
 
             gap: "10px",
 
-            opacity: isListening
-              ? 0.7
-              : 1
+            opacity:
+              isListening
+                ? 0.7
+                : 1
           }}
         >
           <Mic size={20} />
@@ -217,8 +277,11 @@ export default function RepeatPractice({
           className="secondary-button"
           style={{
             display: "flex",
+
             alignItems: "center",
-            justifyContent: "center",
+
+            justifyContent:
+              "center",
 
             gap: "10px"
           }}
@@ -240,7 +303,9 @@ export default function RepeatPractice({
         >
           <h4
             style={{
-              marginBottom: "12px",
+              marginBottom:
+                "12px",
+
               fontSize: "18px"
             }}
           >
@@ -249,11 +314,13 @@ export default function RepeatPractice({
 
           <p
             style={{
-              color: "rgba(255,255,255,0.84)",
+              color:
+                "rgba(255,255,255,0.84)",
 
               lineHeight: 1.8,
 
-              marginBottom: "18px"
+              marginBottom:
+                "18px"
             }}
           >
             {userSpeech}
@@ -263,7 +330,8 @@ export default function RepeatPractice({
             style={{
               padding: "16px",
 
-              borderRadius: "18px",
+              borderRadius:
+                "18px",
 
               background:
                 "rgba(34,197,94,0.12)",
@@ -274,7 +342,8 @@ export default function RepeatPractice({
           >
             <p
               style={{
-                color: "#ffffff",
+                color:
+                  "#ffffff",
 
                 lineHeight: 1.7
               }}
