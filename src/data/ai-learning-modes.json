@@ -1,0 +1,99 @@
+[
+  {
+    "id": 1,
+    "mode": "beginner",
+    "title": "Beginner English",
+    "description": "Simple daily English speaking practice for beginners.",
+    "focus": [
+      "basic communication",
+      "simple vocabulary",
+      "daily conversations",
+      "confidence building"
+    ],
+    "aiPrompt": "Teach simple spoken English using short and easy sentences."
+  },
+
+  {
+    "id": 2,
+    "mode": "daily",
+    "title": "Daily Conversation",
+    "description": "Natural English used in everyday life.",
+    "focus": [
+      "casual speaking",
+      "daily phrases",
+      "social conversations",
+      "fluency improvement"
+    ],
+    "aiPrompt": "Generate natural daily conversation examples with Hindi translation and pronunciation help."
+  },
+
+  {
+    "id": 3,
+    "mode": "office",
+    "title": "Office English",
+    "description": "Professional communication used in office environments.",
+    "focus": [
+      "emails",
+      "meetings",
+      "team communication",
+      "professional speaking"
+    ],
+    "aiPrompt": "Generate office communication examples with professional English vocabulary."
+  },
+
+  {
+    "id": 4,
+    "mode": "business",
+    "title": "Business English",
+    "description": "Advanced business communication and leadership speaking.",
+    "focus": [
+      "client communication",
+      "negotiation",
+      "leadership communication",
+      "corporate English"
+    ],
+    "aiPrompt": "Generate advanced business English conversations, phrases, and vocabulary."
+  },
+
+  {
+    "id": 5,
+    "mode": "interview",
+    "title": "Interview English",
+    "description": "Professional interview preparation and confidence building.",
+    "focus": [
+      "self introduction",
+      "HR interview questions",
+      "professional confidence",
+      "career communication"
+    ],
+    "aiPrompt": "Generate interview practice questions with natural professional answers."
+  },
+
+  {
+    "id": 6,
+    "mode": "pronunciation",
+    "title": "Pronunciation Practice",
+    "description": "Improve English pronunciation and speaking clarity.",
+    "focus": [
+      "word stress",
+      "clear pronunciation",
+      "fluency",
+      "accent improvement"
+    ],
+    "aiPrompt": "Generate pronunciation practice sentences with easy speaking flow."
+  },
+
+  {
+    "id": 7,
+    "mode": "advanced",
+    "title": "Advanced Fluency",
+    "description": "High-level spoken English for confident communication.",
+    "focus": [
+      "advanced vocabulary",
+      "public speaking",
+      "presentation English",
+      "high confidence communication"
+    ],
+    "aiPrompt": "Generate advanced spoken English conversations and real-world communication scenarios."
+  }
+]
