@@ -49,8 +49,7 @@ export default function DailyChallenge({
           alignItems: "center",
           gap: "10px",
 
-          marginBottom:
-            "20px"
+          marginBottom: "20px"
         }}
       >
         <Flame size={24} />
@@ -72,17 +71,14 @@ export default function DailyChallenge({
           background:
             "linear-gradient(135deg, rgba(249,115,22,0.16), rgba(239,68,68,0.16))",
 
-          position:
-            "relative",
+          position: "relative",
 
-          overflow:
-            "hidden"
+          overflow: "hidden"
         }}
       >
         <div
           style={{
-            position:
-              "absolute",
+            position: "absolute",
 
             top: "-70px",
 
@@ -92,8 +88,7 @@ export default function DailyChallenge({
 
             height: "180px",
 
-            borderRadius:
-              "50%",
+            borderRadius: "50%",
 
             background:
               "rgba(255,255,255,0.06)"
@@ -102,8 +97,7 @@ export default function DailyChallenge({
 
         <div
           style={{
-            position:
-              "relative",
+            position: "relative",
 
             zIndex: 1
           }}
@@ -111,69 +105,56 @@ export default function DailyChallenge({
           <div
             style={{
               display: "flex",
-              alignItems:
-                "flex-start",
+
+              alignItems: "flex-start",
 
               justifyContent:
                 "space-between",
 
               gap: "18px",
 
-              marginBottom:
-                "24px"
+              marginBottom: "24px"
             }}
           >
             <div>
               <div
                 style={{
-                  display:
-                    "inline-flex",
+                  display: "inline-flex",
 
-                  alignItems:
-                    "center",
+                  alignItems: "center",
 
                   gap: "8px",
 
-                  padding:
-                    "8px 14px",
+                  padding: "8px 14px",
 
-                  borderRadius:
-                    "999px",
+                  borderRadius: "999px",
 
                   background:
                     "rgba(255,255,255,0.08)",
 
-                  marginBottom:
-                    "16px"
+                  marginBottom: "16px"
                 }}
               >
-                <Sparkles
-                  size={14}
-                />
+                <Sparkles size={14} />
 
                 <span
                   style={{
-                    fontSize:
-                      "12px",
+                    fontSize: "12px",
 
-                    fontWeight:
-                      700
+                    fontWeight: 700
                   }}
                 >
-                  TODAY'S MISSION
+                  TODAY&apos;S MISSION
                 </span>
               </div>
 
               <h3
                 style={{
-                  fontSize:
-                    "30px",
+                  fontSize: "30px",
 
-                  lineHeight:
-                    1.3,
+                  lineHeight: 1.3,
 
-                  marginBottom:
-                    "14px"
+                  marginBottom: "14px"
                 }}
               >
                 {title}
@@ -184,42 +165,34 @@ export default function DailyChallenge({
                   color:
                     "rgba(255,255,255,0.76)",
 
-                  lineHeight:
-                    1.9
+                  lineHeight: 1.9
                 }}
               >
-                {
-                  description
-                }
+                {description}
               </p>
             </div>
 
             <div
               style={{
                 width: "82px",
+
                 height: "82px",
 
-                minWidth:
-                  "82px",
+                minWidth: "82px",
 
-                borderRadius:
-                  "26px",
+                borderRadius: "26px",
 
                 display: "flex",
 
-                alignItems:
-                  "center",
+                alignItems: "center",
 
-                justifyContent:
-                  "center",
+                justifyContent: "center",
 
                 background:
                   "rgba(255,255,255,0.08)"
               }}
             >
-              <Brain
-                size={38}
-              />
+              <Brain size={38} />
             </div>
           </div>
 
@@ -232,8 +205,7 @@ export default function DailyChallenge({
 
               gap: "16px",
 
-              marginBottom:
-                "24px"
+              marginBottom: "24px"
             }}
           >
             <div
@@ -247,26 +219,20 @@ export default function DailyChallenge({
             >
               <div
                 style={{
-                  display:
-                    "flex",
+                  display: "flex",
 
-                  alignItems:
-                    "center",
+                  alignItems: "center",
 
                   gap: "10px",
 
-                  marginBottom:
-                    "10px"
+                  marginBottom: "10px"
                 }}
               >
-                <Trophy
-                  size={20}
-                />
+                <Trophy size={20} />
 
                 <span
                   style={{
-                    fontWeight:
-                      600
+                    fontWeight: 600
                   }}
                 >
                   Reward
@@ -275,8 +241,7 @@ export default function DailyChallenge({
 
               <h4
                 style={{
-                  fontSize:
-                    "24px"
+                  fontSize: "24px"
                 }}
               >
                 {reward}
@@ -294,26 +259,20 @@ export default function DailyChallenge({
             >
               <div
                 style={{
-                  display:
-                    "flex",
+                  display: "flex",
 
-                  alignItems:
-                    "center",
+                  alignItems: "center",
 
                   gap: "10px",
 
-                  marginBottom:
-                    "10px"
+                  marginBottom: "10px"
                 }}
               >
-                <Clock3
-                  size={20}
-                />
+                <Clock3 size={20} />
 
                 <span
                   style={{
-                    fontWeight:
-                      600
+                    fontWeight: 600
                   }}
                 >
                   Duration
@@ -322,8 +281,7 @@ export default function DailyChallenge({
 
               <h4
                 style={{
-                  fontSize:
-                    "24px"
+                  fontSize: "24px"
                 }}
               >
                 {duration}
@@ -333,27 +291,24 @@ export default function DailyChallenge({
 
           <div
             style={{
-              marginBottom:
-                "24px"
+              marginBottom: "24px"
             }}
           >
             <div
               style={{
                 display: "flex",
-                alignItems:
-                  "center",
+
+                alignItems: "center",
 
                 justifyContent:
                   "space-between",
 
-                marginBottom:
-                  "10px"
+                marginBottom: "10px"
               }}
             >
               <span
                 style={{
-                  fontWeight:
-                    600
+                  fontWeight: 600
                 }}
               >
                 Progress
@@ -372,27 +327,24 @@ export default function DailyChallenge({
             <div
               style={{
                 width: "100%",
+
                 height: "12px",
 
-                borderRadius:
-                  "999px",
+                borderRadius: "999px",
 
                 background:
                   "rgba(255,255,255,0.08)",
 
-                overflow:
-                  "hidden"
+                overflow: "hidden"
               }}
             >
               <div
                 style={{
                   width: `${progress}%`,
 
-                  height:
-                    "100%",
+                  height: "100%",
 
-                  borderRadius:
-                    "999px",
+                  borderRadius: "999px",
 
                   background:
                     "linear-gradient(90deg, #ffffff, rgba(255,255,255,0.75))"
@@ -403,9 +355,7 @@ export default function DailyChallenge({
 
           <button
             className="primary-button"
-            onClick={
-              onStart
-            }
+            onClick={onStart}
             style={{
               width: "100%",
 
@@ -413,23 +363,19 @@ export default function DailyChallenge({
 
               display: "flex",
 
-              alignItems:
-                "center",
+              alignItems: "center",
 
-              justifyContent:
-                "center",
+              justifyContent: "center",
 
               gap: "12px"
             }}
           >
             Start Challenge
 
-            <ArrowRight
-              size={20}
-            />
+            <ArrowRight size={20} />
           </button>
         </div>
       </div>
     </section>
   );
-              }
+                  }
