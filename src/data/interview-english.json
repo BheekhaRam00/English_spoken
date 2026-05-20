@@ -1,0 +1,96 @@
+[
+  {
+    "id": 1,
+    "category": "Self Introduction",
+    "english": "Thank you for giving me this opportunity to introduce myself.",
+    "hindi": "मुझे अपना परिचय देने का अवसर देने के लिए धन्यवाद।",
+    "vocabulary": [
+      {
+        "word": "Opportunity",
+        "meaning": "अवसर",
+        "pronunciation": "ऑपरच्युनिटी"
+      },
+      {
+        "word": "Introduce",
+        "meaning": "परिचय देना",
+        "pronunciation": "इंट्रोड्यूस"
+      }
+    ]
+  },
+
+  {
+    "id": 2,
+    "category": "Work Experience",
+    "english": "I have three years of experience in client communication and sales.",
+    "hindi": "मुझे क्लाइंट कम्युनिकेशन और सेल्स में तीन वर्षों का अनुभव है।",
+    "vocabulary": [
+      {
+        "word": "Experience",
+        "meaning": "अनुभव",
+        "pronunciation": "एक्सपीरियंस"
+      },
+      {
+        "word": "Communication",
+        "meaning": "संचार",
+        "pronunciation": "कम्युनिकेशन"
+      }
+    ]
+  },
+
+  {
+    "id": 3,
+    "category": "Strengths",
+    "english": "My biggest strength is solving problems calmly and professionally.",
+    "hindi": "मेरी सबसे बड़ी ताकत समस्याओं को शांत और प्रोफेशनल तरीके से हल करना है।",
+    "vocabulary": [
+      {
+        "word": "Strength",
+        "meaning": "ताकत",
+        "pronunciation": "स्ट्रेंथ"
+      },
+      {
+        "word": "Professionally",
+        "meaning": "पेशेवर तरीके से",
+        "pronunciation": "प्रोफेशनली"
+      }
+    ]
+  },
+
+  {
+    "id": 4,
+    "category": "Career Goals",
+    "english": "I want to improve my skills and grow with the company.",
+    "hindi": "मैं अपनी स्किल्स सुधारना चाहता हूँ और कंपनी के साथ आगे बढ़ना चाहता हूँ।",
+    "vocabulary": [
+      {
+        "word": "Improve",
+        "meaning": "सुधारना",
+        "pronunciation": "इम्प्रूव"
+      },
+      {
+        "word": "Grow",
+        "meaning": "आगे बढ़ना",
+        "pronunciation": "ग्रो"
+      }
+    ]
+  },
+
+  {
+    "id": 5,
+    "category": "Teamwork",
+    "english": "I enjoy working in a team and learning from experienced people.",
+    "hindi": "मुझे टीम में काम करना और अनुभवी लोगों से सीखना पसंद है।",
+    "vocabulary": [
+      {
+        "word": "Experienced",
+        "meaning": "अनुभवी",
+        "pronunciation": "एक्सपीरियंस्ड"
+      },
+      {
+        "word": "Learning",
+        "meaning": "सीखना",
+        "pronunciation": "लर्निंग"
+      }
+    ]
+  }
+]
