@@ -14,7 +14,7 @@ import {
 
 import {
   SettingsEngine
-} from "@/lib/settingsEngine";
+} from "@/lib/settings-engine.ts";
 
 export default function AppPreferences() {
   const settingsEngine =
