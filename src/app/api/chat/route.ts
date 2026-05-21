@@ -1,23 +1,44 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse
+} from "next/server";
 
-import { env } from "@/server/env";
+import { env }
+  from "@/server/env";
 
-import { trimConversation } from "@/server/ai/context-manager";
+import {
+  trimConversation
+} from "@/server/ai/context-manager";
 
-import { getOfflineReply } from "@/server/ai/offline-replies";
+import {
+  getOfflineReply
+} from "@/server/ai/offline-replies";
 
-import { requestAICompletion } from "@/server/ai/provider-manager";
+import {
+  requestAICompletion
+} from "@/server/ai/provider-manager";
 
-import { cleanAIText } from "@/server/utils/text";
+import {
+  cleanAIText
+} from "@/server/utils/text";
 
-import { validateChatRequest } from "@/server/security/request-validator";
+import {
+  validateChatRequest
+} from "@/server/security/request-validator";
 
-import { applyRateLimit } from "@/server/security/rate-limit";
+import {
+  applyRateLimit
+} from "@/server/security/rate-limit";
 
 import {
   logInfo,
   logError
 } from "@/server/utils/logger";
+
+export const dynamic =
+  "force-dynamic";
+
+export const revalidate = 0;
 
 type ChatRequestBody = {
   message: string;
@@ -35,12 +56,32 @@ type ChatRequestBody = {
     | "advanced";
 };
 
+function buildFallbackReply({
+  message,
+  mode
+}: {
+  message: string;
+
+  mode:
+    | "daily"
+    | "business"
+    | "interview"
+    | "advanced";
+}) {
+  return getOfflineReply({
+    message,
+    mode
+  });
+}
+
 export async function POST(
   request: NextRequest
 ) {
   try {
     const rateLimitPassed =
-      applyRateLimit(request);
+      applyRateLimit(
+        request
+      );
 
     if (!rateLimitPassed) {
       return NextResponse.json(
@@ -56,7 +97,8 @@ export async function POST(
       );
     }
 
-    const body: ChatRequestBody =
+    const body:
+      ChatRequestBody =
       await request.json();
 
     const validationResult =
@@ -99,16 +141,23 @@ export async function POST(
       );
     }
 
+    const mode =
+      body.mode ||
+      "daily";
+
     const history =
       trimConversation(
         body.history || [],
-        12
+        10
       );
 
     logInfo(
       `Chat request received: ${cleanedMessage}`
     );
 
+    /*
+    NO API KEY
+    */
     if (
       !env.OPENROUTER_API_KEY
     ) {
@@ -117,24 +166,33 @@ export async function POST(
         "Environment variable not found."
       );
 
-      return NextResponse.json({
-        success: true,
+      return NextResponse.json(
+        {
+          success: true,
 
-        reply:
-          getOfflineReply({
-            message:
-              cleanedMessage,
+          reply:
+            buildFallbackReply({
+              message:
+                cleanedMessage,
 
-            mode:
-              body.mode ||
-              "daily"
-          }),
+              mode
+            }),
 
-        source:
-          "offline"
-      });
+          source:
+            "offline"
+        },
+        {
+          headers: {
+            "Cache-Control":
+              "no-store"
+          }
+        }
+      );
     }
 
+    /*
+    AI REQUEST
+    */
     let aiReply = "";
 
     try {
@@ -146,9 +204,7 @@ export async function POST(
 
             history,
 
-            mode:
-              body.mode ||
-              "daily",
+            mode,
 
             apiKey:
               env.OPENROUTER_API_KEY
@@ -160,59 +216,85 @@ export async function POST(
         aiError
       );
 
-      return NextResponse.json({
-        success: true,
+      return NextResponse.json(
+        {
+          success: true,
 
-        reply:
-          getOfflineReply({
-            message:
-              cleanedMessage,
+          reply:
+            buildFallbackReply({
+              message:
+                cleanedMessage,
 
-            mode:
-              body.mode ||
-              "daily"
-          }),
+              mode
+            }),
 
-        source:
-          "fallback"
-      });
+          source:
+            "fallback"
+        },
+        {
+          headers: {
+            "Cache-Control":
+              "no-store"
+          }
+        }
+      );
     }
 
+    /*
+    CLEAN RESPONSE
+    */
     const cleanedReply =
       cleanAIText(
         aiReply
-      )
-        .replace(/\n+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      ).trim();
 
+    /*
+    EMPTY RESPONSE
+    */
     if (!cleanedReply) {
-      return NextResponse.json({
+      return NextResponse.json(
+        {
+          success: true,
+
+          reply:
+            buildFallbackReply({
+              message:
+                cleanedMessage,
+
+              mode
+            }),
+
+          source:
+            "empty-fallback"
+        },
+        {
+          headers: {
+            "Cache-Control":
+              "no-store"
+          }
+        }
+      );
+    }
+
+    /*
+    SUCCESS
+    */
+    return NextResponse.json(
+      {
         success: true,
 
         reply:
-          getOfflineReply({
-            message:
-              cleanedMessage,
+          cleanedReply,
 
-            mode:
-              body.mode ||
-              "daily"
-          }),
-
-        source:
-          "empty-fallback"
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-
-      reply:
-        cleanedReply,
-
-      source: "ai"
-    });
+        source: "ai"
+      },
+      {
+        headers: {
+          "Cache-Control":
+            "no-store"
+        }
+      }
+    );
   } catch (error) {
     logError(
       "Chat Route Error",
@@ -224,13 +306,18 @@ export async function POST(
         success: true,
 
         reply:
-          "Sorry, I had a temporary issue. Please say that again.",
+          "Sorry, I had a temporary issue. Please try again.",
 
         source:
           "emergency-fallback"
       },
       {
-        status: 200
+        status: 200,
+
+        headers: {
+          "Cache-Control":
+            "no-store"
+        }
       }
     );
   }
