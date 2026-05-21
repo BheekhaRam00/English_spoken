@@ -50,9 +50,13 @@ export class LearningEngine {
 
   private score: number;
 
+  private apiKey: string;
+
   constructor(
     mode: LearningMode =
-      "beginner"
+      "beginner",
+
+    apiKey = ""
   ) {
     this.mode = mode;
 
@@ -60,12 +64,20 @@ export class LearningEngine {
       [];
 
     this.score = 0;
+
+    this.apiKey = apiKey;
   }
 
   setMode(
     mode: LearningMode
   ) {
     this.mode = mode;
+  }
+
+  setApiKey(
+    apiKey: string
+  ) {
+    this.apiKey = apiKey;
   }
 
   getMode() {
@@ -202,41 +214,49 @@ export class LearningEngine {
   }
 
   async generateAILesson(
-    apiKey: string,
     userLevel = "beginner"
   ): Promise<GeneratedLearningContent | null> {
     try {
+      if (!this.apiKey) {
+        return this.generateOfflineLesson();
+      }
+
       const lesson =
         await generateDynamicLesson(
           {
-            apiKey,
+            apiKey:
+              this.apiKey,
 
-            mode: this.mode,
+            mode:
+              this.mode,
 
             userLevel
           }
         );
 
       if (!lesson) {
-        return null;
+        return this.generateOfflineLesson();
       }
 
       return {
-        title: lesson.title,
+        title:
+          lesson.title,
 
         english:
           lesson.english,
 
-        hindi: lesson.hindi,
+        hindi:
+          lesson.hindi,
 
         vocabulary:
-          lesson.vocabulary,
+          lesson.vocabulary || [],
 
         phrases:
-          lesson.phrases,
+          lesson.phrases || [],
 
         pronunciationTip:
-          lesson.pronunciationTip
+          lesson.pronunciationTip ||
+          "Speak slowly and clearly."
       };
     } catch (error) {
       console.error(
@@ -244,7 +264,7 @@ export class LearningEngine {
         error
       );
 
-      return null;
+      return this.generateOfflineLesson();
     }
   }
 
@@ -253,7 +273,23 @@ export class LearningEngine {
       this.getRandomLesson();
 
     if (!lesson) {
-      return null;
+      return {
+        title:
+          "English Practice",
+
+        english:
+          "How was your day today?",
+
+        hindi:
+          "आज आपका दिन कैसा था?",
+
+        vocabulary: [],
+
+        phrases: [],
+
+        pronunciationTip:
+          "Speak slowly and confidently."
+      };
     }
 
     return {
@@ -317,10 +353,13 @@ export class LearningEngine {
     );
   }
 
-  getDailyPracticePlan() {
+  async getDailyPracticePlan() {
+    const aiLesson =
+      await this.generateAILesson();
+
     return {
       lesson:
-        this.getRandomLesson(),
+        aiLesson,
 
       phrase:
         this.getPhrasePractice(),
@@ -349,4 +388,4 @@ export class LearningEngine {
         this.getProgressPercentage()
     };
   }
-        }
+}
