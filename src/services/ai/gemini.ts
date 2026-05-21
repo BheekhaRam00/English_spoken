@@ -11,7 +11,9 @@ type GeminiResponse = {
   }[];
 
   error?: {
+    code?: number;
     message?: string;
+    status?: string;
   };
 };
 
@@ -32,13 +34,11 @@ You are FluentPro AI.
 You help Indian users improve spoken English fluency naturally.
 
 Rules:
-- Speak in natural conversational English.
-- Sound friendly and human.
-- Keep replies short and realistic.
-- Ask natural follow-up questions.
-- Encourage the learner confidently.
-- Avoid robotic replies.
-- Never repeat the same sentence.
+- Speak naturally.
+- Keep replies short.
+- Sound human and friendly.
+- Ask follow-up questions naturally.
+- Avoid robotic responses.
 - Never use markdown.
 - Keep replies under 60 words.
 `;
@@ -66,7 +66,7 @@ function buildConversationPrompt(
   return `
 ${SYSTEM_PROMPT}
 
-Conversation History:
+Conversation:
 ${formattedHistory}
 
 User: ${message}
@@ -86,7 +86,7 @@ export async function generateAIReply({
         "Gemini API key missing"
       );
 
-      return "AI setup issue detected.";
+      return "DEBUG: Gemini API key missing.";
     }
 
     const prompt =
@@ -94,6 +94,10 @@ export async function generateAIReply({
         message,
         conversationHistory
       );
+
+    console.log(
+      "Gemini Request Started"
+    );
 
     const response = await fetch(
       `${GEMINI_API_URL}?key=${apiKey}`,
@@ -108,8 +112,6 @@ export async function generateAIReply({
         body: JSON.stringify({
           contents: [
             {
-              role: "user",
-
               parts: [
                 {
                   text: prompt
@@ -128,13 +130,32 @@ export async function generateAIReply({
       }
     );
 
-    const data: GeminiResponse =
-      await response.json();
+    console.log(
+      "Gemini HTTP Status:",
+      response.status
+    );
+
+    const rawText =
+      await response.text();
 
     console.log(
-      "Gemini Response:",
-      data
+      "Gemini Raw Response:",
+      rawText
     );
+
+    let data: GeminiResponse;
+
+    try {
+      data =
+        JSON.parse(rawText);
+    } catch (jsonError) {
+      console.error(
+        "Gemini JSON Parse Error:",
+        jsonError
+      );
+
+      return `DEBUG: Invalid JSON response: ${rawText}`;
+    }
 
     if (!response.ok) {
       console.error(
@@ -142,7 +163,14 @@ export async function generateAIReply({
         data
       );
 
-      return "AI server error. Please try again.";
+      return `DEBUG API ERROR:
+Status: ${response.status}
+
+Message:
+${
+  data?.error?.message ||
+  "Unknown Gemini API error"
+}`;
     }
 
     const reply =
@@ -154,7 +182,14 @@ export async function generateAIReply({
       !reply ||
       !reply.trim()
     ) {
-      return "Can you tell me more?";
+      console.error(
+        "Gemini Empty Reply:",
+        data
+      );
+
+      return `DEBUG: Empty AI reply received.
+Raw Response:
+${rawText}`;
     }
 
     return reply
@@ -167,6 +202,13 @@ export async function generateAIReply({
       error
     );
 
-    return "Connection problem. Please try again.";
+    if (
+      error instanceof Error
+    ) {
+      return `DEBUG FATAL ERROR:
+${error.message}`;
+    }
+
+    return "DEBUG: Unknown fatal error.";
   }
 }
