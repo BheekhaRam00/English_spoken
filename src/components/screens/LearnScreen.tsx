@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useState
 } from "react";
 
@@ -21,6 +22,10 @@ import {
 import {
   LearningMode
 } from "@/types";
+
+import {
+  speakText
+} from "@/services/speech/speechSynthesis";
 
 type LearnScreenProps = {
   mode: LearningMode;
@@ -76,133 +81,101 @@ export default function LearnScreen({
   const [error, setError] =
     useState("");
 
-  const fetchLesson =
-    async () => {
-      try {
-        setLoading(true);
+  async function fetchLesson() {
+    try {
+      setLoading(true);
 
-        setError("");
+      setError("");
 
-        const response =
-          await fetch(
-            `/api/lesson?mode=${mode}`,
-            {
-              cache:
-                "no-store"
-            }
-          );
-
-        const data =
-          await response.json();
-
-        if (
-          data?.success &&
-          data?.lesson
-        ) {
-          setLesson(
-            data.lesson
-          );
-        } else {
-          setError(
-            "Unable to load lesson."
-          );
-        }
-      } catch (error) {
-        console.error(
-          "Lesson fetch error:",
-          error
+      const response =
+        await fetch(
+          `/api/lesson?mode=${mode}&t=${Date.now()}`,
+          {
+            cache:
+              "no-store"
+          }
         );
 
-        setError(
-          "Something went wrong."
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data?.success ||
+        !data?.lesson
+      ) {
+        throw new Error(
+          "Lesson load failed."
         );
-      } finally {
-        setLoading(false);
       }
-    };
+
+      setLesson(
+        data.lesson
+      );
+    } catch (error) {
+      console.error(
+        "Lesson Fetch Error:",
+        error
+      );
+
+      setError(
+        "Unable to generate lesson."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetchLesson();
   }, [mode]);
 
-  const speakText = (
-    text: string
-  ) => {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
-      return;
-    }
-
-    const utterance =
-      new SpeechSynthesisUtterance(
-        text
-      );
-
-    utterance.lang =
-      "en-US";
-
-    utterance.rate =
-      0.9;
-
-    utterance.pitch =
-      1;
-
-    window.speechSynthesis.cancel();
-
-    window.speechSynthesis.speak(
-      utterance
-    );
-  };
-
+  /*
+  CLEAN SENTENCE SPLIT
+  */
   const lessonSentences =
-    lesson?.english
-      ?.split(/[.!?]/)
-      .map((item) =>
-        item.trim()
-      )
-      .filter(Boolean) || [];
+    useMemo(() => {
+      if (
+        !lesson?.english
+      ) {
+        return [];
+      }
 
+      return lesson.english
+        .split(
+          /\n|[.!?]+/
+        )
+        .map((item) =>
+          item.trim()
+        )
+        .filter(
+          (item) =>
+            item.length > 2
+        )
+        .slice(0, 5);
+    }, [lesson]);
+
+  /*
+  COMPACT MOBILE LOADER
+  */
   if (
     loading &&
     !lesson
   ) {
     return (
-      <main className="page-container">
-        <div
-          className="glass-card"
-          style={{
-            padding: "70px 24px",
-            textAlign:
-              "center"
-          }}
-        >
+      <main className="min-h-screen bg-[#0f172a] px-4 py-5 text-white">
+        <div className="mx-auto flex max-w-md flex-col items-center rounded-3xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl">
           <Loader2
-            size={48}
+            size={34}
             className="animate-spin"
           />
 
-          <h2
-            style={{
-              marginTop:
-                "24px",
-              fontSize:
-                "28px"
-            }}
-          >
-            Generating AI Lesson...
+          <h2 className="mt-5 text-xl font-semibold">
+            Generating Lesson
           </h2>
 
-          <p
-            style={{
-              marginTop:
-                "10px",
-              color:
-                "rgba(255,255,255,0.65)"
-            }}
-          >
-            Creating spoken English practice.
+          <p className="mt-2 text-sm text-white/60">
+            Creating spoken English practice...
           </p>
         </div>
       </main>
@@ -210,660 +183,311 @@ export default function LearnScreen({
   }
 
   return (
-    <main className="page-container">
-      <section
-        style={{
-          display: "flex",
-          alignItems:
-            "center",
-          gap: "14px",
-          marginBottom:
-            "24px"
-        }}
-      >
-        <Link href="/">
-          <button
-            className="secondary-button"
-            style={{
-              width: "54px",
-              height: "54px",
-              padding: 0,
-              borderRadius:
-                "18px"
-            }}
-          >
-            <ArrowLeft
-              size={22}
-            />
-          </button>
-        </Link>
-
-        <div>
-          <h1
-            className="page-title"
-            style={{
-              marginBottom:
-                "4px",
-              fontSize:
-                "34px"
-            }}
-          >
-            Learn English
-          </h1>
-
-          <p
-            style={{
-              color:
-                "rgba(255,255,255,0.72)"
-            }}
-          >
-            Real AI-generated spoken English lessons.
-          </p>
-        </div>
-      </section>
-
-      <section
-        style={{
-          display: "flex",
-          gap: "12px",
-          overflowX:
-            "auto",
-          marginBottom:
-            "24px",
-          paddingBottom:
-            "4px"
-        }}
-      >
-        {modes.map(
-          (
-            learningMode
-          ) => (
-            <button
-              key={
-                learningMode
-              }
-              onClick={() =>
-                onModeChange(
-                  learningMode
-                )
-              }
-              style={{
-                minWidth:
-                  "120px",
-
-                height:
-                  "48px",
-
-                borderRadius:
-                  "16px",
-
-                background:
-                  mode ===
-                  learningMode
-                    ? "linear-gradient(90deg,#9333ea,#2563eb)"
-                    : "rgba(255,255,255,0.05)",
-
-                color:
-                  "#fff",
-
-                fontWeight:
-                  600,
-
-                textTransform:
-                  "capitalize",
-
-                border:
-                  "none"
-              }}
-            >
-              {
-                learningMode
-              }
+    <main className="min-h-screen overflow-x-hidden bg-[#0f172a] px-3 py-4 text-white">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+        {/* HEADER */}
+        <section className="flex items-center gap-3">
+          <Link href="/">
+            <button className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+              <ArrowLeft
+                size={18}
+              />
             </button>
-          )
-        )}
-      </section>
+          </Link>
 
-      {error ? (
-        <div
-          className="glass-card"
-          style={{
-            padding: "40px",
-            textAlign:
-              "center"
-          }}
-        >
-          <h2>
-            {error}
-          </h2>
+          <div>
+            <h1 className="text-2xl font-bold">
+              Learn English
+            </h1>
 
-          <button
-            className="primary-button"
-            onClick={
-              fetchLesson
-            }
-            style={{
-              marginTop:
-                "20px"
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      ) : null}
-
-      {lesson ? (
-        <section
-          className="glass-card"
-          style={{
-            padding: "28px"
-          }}
-        >
-          <div
-            style={{
-              display:
-                "flex",
-
-              justifyContent:
-                "space-between",
-
-              alignItems:
-                "center",
-
-              gap: "16px",
-
-              marginBottom:
-                "26px"
-            }}
-          >
-            <div
-              style={{
-                display:
-                  "inline-flex",
-
-                alignItems:
-                  "center",
-
-                gap: "8px",
-
-                padding:
-                  "10px 16px",
-
-                borderRadius:
-                  "999px",
-
-                background:
-                  "linear-gradient(90deg, rgba(147,51,234,0.18), rgba(37,99,235,0.18))"
-              }}
-            >
-              <BookOpen
-                size={18}
-              />
-
-              <span>
-                {lesson.title ||
-                  lesson.category ||
-                  "AI Lesson"}
-              </span>
-            </div>
-
-            <div
-              style={{
-                display:
-                  "flex",
-
-                alignItems:
-                  "center",
-
-                gap: "8px",
-
-                color:
-                  "#fff"
-              }}
-            >
-              <Brain
-                size={18}
-              />
-
-              <span>
-                Live AI
-              </span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display:
-                "grid",
-              gap: "16px",
-              marginBottom:
-                "28px"
-            }}
-          >
-            {lessonSentences.map(
-              (
-                sentence,
-                index
-              ) => (
-                <div
-                  key={index}
-                  style={{
-                    padding:
-                      "22px",
-
-                    borderRadius:
-                      "22px",
-
-                    background:
-                      "rgba(255,255,255,0.05)",
-
-                    border:
-                      "1px solid rgba(255,255,255,0.06)"
-                  }}
-                >
-                  <div
-                    style={{
-                      display:
-                        "flex",
-
-                      justifyContent:
-                        "space-between",
-
-                      alignItems:
-                        "flex-start",
-
-                      gap: "14px"
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize:
-                          "28px",
-
-                        lineHeight:
-                          1.8,
-
-                        flex: 1
-                      }}
-                    >
-                      {sentence}.
-                    </p>
-
-                    <button
-                      onClick={() =>
-                        speakText(
-                          sentence
-                        )
-                      }
-                      style={{
-                        minWidth:
-                          "46px",
-
-                        height:
-                          "46px",
-
-                        borderRadius:
-                          "14px",
-
-                        border:
-                          "none",
-
-                        background:
-                          "linear-gradient(90deg,#9333ea,#2563eb)",
-
-                        color:
-                          "#fff",
-
-                        display:
-                          "flex",
-
-                        alignItems:
-                          "center",
-
-                        justifyContent:
-                          "center"
-                      }}
-                    >
-                      <Volume2
-                        size={
-                          20
-                        }
-                      />
-                    </button>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-
-          <button
-            className="primary-button"
-            onClick={() =>
-              speakText(
-                lesson.english
-              )
-            }
-            style={{
-              marginBottom:
-                "26px",
-              width: "100%"
-            }}
-          >
-            <Volume2
-              size={20}
-            />
-
-            Listen Full Lesson
-          </button>
-
-          <div
-            className="glass-card"
-            style={{
-              padding: "22px",
-              marginBottom:
-                "28px"
-            }}
-          >
-            <h3
-              style={{
-                marginBottom:
-                  "14px",
-                fontSize:
-                  "22px"
-              }}
-            >
-              Hindi Translation
-            </h3>
-
-            <p
-              style={{
-                lineHeight:
-                  2,
-
-                color:
-                  "rgba(255,255,255,0.82)",
-
-                fontSize:
-                  "18px"
-              }}
-            >
-              {lesson.hindi}
+            <p className="text-xs text-white/60">
+              AI spoken English lessons
             </p>
           </div>
+        </section>
 
-          {lesson.vocabulary
-            ?.length ? (
-            <div
-              style={{
-                marginBottom:
-                  "30px"
-              }}
+        {/* MODES */}
+        <section className="flex gap-2 overflow-x-auto pb-1">
+          {modes.map(
+            (
+              learningMode
+            ) => (
+              <button
+                key={
+                  learningMode
+                }
+                onClick={() =>
+                  onModeChange(
+                    learningMode
+                  )
+                }
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold capitalize whitespace-nowrap transition ${
+                  mode ===
+                  learningMode
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600"
+                    : "border border-white/10 bg-white/5"
+                }`}
+              >
+                {
+                  learningMode
+                }
+              </button>
+            )
+          )}
+        </section>
+
+        {/* ERROR */}
+        {error ? (
+          <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-4 text-center">
+            <p className="text-sm text-red-200">
+              {error}
+            </p>
+
+            <button
+              onClick={
+                fetchLesson
+              }
+              className="mt-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-2 text-sm font-semibold"
             >
-              <h3
-                style={{
-                  marginBottom:
-                    "18px",
-                  fontSize:
-                    "24px"
-                }}
-              >
-                Vocabulary
-              </h3>
+              Retry
+            </button>
+          </div>
+        ) : null}
 
-              <div
-                style={{
-                  display:
-                    "grid",
-                  gap: "16px"
-                }}
-              >
-                {lesson.vocabulary.map(
-                  (
-                    item
-                  ) => (
-                    <div
-                      key={
-                        item.word
-                      }
-                      className="glass-card"
-                      style={{
-                        padding:
-                          "20px"
-                      }}
-                    >
-                      <div
-                        style={{
-                          display:
-                            "flex",
+        {/* MAIN CARD */}
+        {lesson ? (
+          <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+            {/* TOP */}
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-3 py-2 text-xs font-semibold">
+                <BookOpen
+                  size={14}
+                />
 
-                          justifyContent:
-                            "space-between",
+                <span>
+                  {lesson.title ||
+                    lesson.category ||
+                    "AI Lesson"}
+                </span>
+              </div>
 
-                          alignItems:
-                            "center",
+              <div className="flex items-center gap-1 text-xs text-white/70">
+                <Brain
+                  size={14}
+                />
 
-                          marginBottom:
-                            "14px"
-                        }}
-                      >
-                        <h4
-                          style={{
-                            fontSize:
-                              "24px"
-                          }}
-                        >
-                          {
-                            item.word
-                          }
-                        </h4>
+                <span>
+                  Live AI
+                </span>
+              </div>
+            </div>
 
-                        <button
-                          onClick={() =>
-                            speakText(
-                              item.word
-                            )
-                          }
-                          style={{
-                            width:
-                              "42px",
-
-                            height:
-                              "42px",
-
-                            borderRadius:
-                              "12px",
-
-                            border:
-                              "none",
-
-                            background:
-                              "rgba(255,255,255,0.06)",
-
-                            color:
-                              "#fff"
-                          }}
-                        >
-                          <Volume2
-                            size={
-                              18
-                            }
-                          />
-                        </button>
+            {/* ENGLISH */}
+            <div className="space-y-3">
+              {lessonSentences.map(
+                (
+                  sentence,
+                  index
+                ) => (
+                  <div
+                    key={index}
+                    className="rounded-2xl border border-white/5 bg-white/5 p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-xs font-bold">
+                        {index + 1}
                       </div>
 
-                      <p
-                        style={{
-                          marginBottom:
-                            "8px",
+                      <div className="flex-1">
+                        <p className="text-[15px] leading-7 text-white">
+                          {sentence}
+                        </p>
+                      </div>
 
-                          color:
-                            "rgba(255,255,255,0.85)"
-                        }}
-                      >
-                        Meaning:
-                        {" "}
-                        {
-                          item.meaning
+                      <button
+                        onClick={() =>
+                          speakText(
+                            {
+                              text:
+                                sentence
+                            }
+                          )
                         }
-                      </p>
-
-                      <p
-                        style={{
-                          color:
-                            "rgba(255,255,255,0.68)"
-                        }}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10"
                       >
-                        Pronunciation:
-                        {" "}
-                        {
-                          item.pronunciation
-                        }
-                      </p>
+                        <Volume2
+                          size={16}
+                        />
+                      </button>
                     </div>
-                  )
-                )}
-              </div>
+                  </div>
+                )
+              )}
             </div>
-          ) : null}
 
-          <div
-            className="glass-card"
-            style={{
-              padding: "22px",
-              background:
-                "rgba(34,197,94,0.12)",
-              border:
-                "1px solid rgba(34,197,94,0.18)"
-            }}
-          >
-            <div
-              style={{
-                display:
-                  "flex",
-                gap: "12px"
-              }}
+            {/* FULL AUDIO */}
+            <button
+              onClick={() =>
+                speakText({
+                  text:
+                    lesson.english
+                })
+              }
+              className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold"
             >
-              <CheckCircle2
-                size={22}
+              <Volume2
+                size={18}
               />
 
-              <div>
-                <h3
-                  style={{
-                    marginBottom:
-                      "6px"
-                  }}
-                >
-                  Practice Tip
+              Listen Full Lesson
+            </button>
+
+            {/* HINDI */}
+            <div className="mt-4 rounded-2xl border border-white/5 bg-white/5 p-4">
+              <h3 className="mb-2 text-sm font-semibold text-white">
+                Hindi Meaning
+              </h3>
+
+              <p className="text-sm leading-7 text-white/75">
+                {lesson.hindi}
+              </p>
+            </div>
+
+            {/* VOCAB */}
+            {lesson.vocabulary
+              ?.length ? (
+              <div className="mt-4">
+                <h3 className="mb-3 text-sm font-semibold">
+                  Vocabulary
                 </h3>
 
-                <p
-                  style={{
-                    lineHeight:
-                      1.7,
-                    color:
-                      "rgba(255,255,255,0.76)"
-                  }}
-                >
-                  {lesson.pronunciationTip ||
-                    "Speak naturally and confidently."}
-                </p>
+                <div className="space-y-3">
+                  {lesson.vocabulary
+                    .slice(0, 3)
+                    .map(
+                      (
+                        item
+                      ) => (
+                        <div
+                          key={
+                            item.word
+                          }
+                          className="rounded-2xl border border-white/5 bg-white/5 p-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <h4 className="text-sm font-semibold">
+                                {
+                                  item.word
+                                }
+                              </h4>
+
+                              <p className="mt-1 text-xs text-white/70">
+                                {
+                                  item.meaning
+                                }
+                              </p>
+
+                              <p className="mt-1 text-[11px] text-white/45">
+                                {
+                                  item.pronunciation
+                                }
+                              </p>
+                            </div>
+
+                            <button
+                              onClick={() =>
+                                speakText(
+                                  {
+                                    text:
+                                      item.word
+                                  }
+                                )
+                              }
+                              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"
+                            >
+                              <Volume2
+                                size={
+                                  15
+                                }
+                              />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* TIP */}
+            <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/10 p-4">
+              <div className="flex gap-3">
+                <CheckCircle2
+                  size={18}
+                  className="mt-0.5 shrink-0"
+                />
+
+                <div>
+                  <h3 className="text-sm font-semibold">
+                    Practice Tip
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-6 text-white/75">
+                    {lesson.pronunciationTip ||
+                      "Speak slowly and confidently."}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      ) : null}
+          </section>
+        ) : null}
 
-      <section
-        style={{
-          marginTop: "28px"
-        }}
-      >
+        {/* GENERATE */}
         <button
-          className="primary-button"
           onClick={
             fetchLesson
           }
           disabled={loading}
-          style={{
-            width: "100%",
-            opacity:
-              loading
-                ? 0.7
-                : 1
-          }}
+          className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold transition hover:opacity-90 disabled:opacity-60"
         >
           {loading ? (
             <>
               <Loader2
-                size={20}
+                size={18}
                 className="animate-spin"
               />
+
               Generating...
             </>
           ) : (
             <>
               <RefreshCw
-                size={20}
+                size={18}
               />
-              Generate New AI Lesson
+
+              New AI Lesson
             </>
           )}
         </button>
-      </section>
 
-      <section
-        className="glass-card"
-        style={{
-          marginTop: "28px",
-          padding: "24px",
-          background:
-            "linear-gradient(90deg, rgba(147,51,234,0.14), rgba(37,99,235,0.14))"
-        }}
-      >
-        <div
-          style={{
-            display:
-              "flex",
+        {/* FOOTER */}
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-purple-600/10 to-blue-600/10 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles
+              size={16}
+            />
 
-            alignItems:
-              "center",
+            <h2 className="text-sm font-semibold">
+              AI Learning
+            </h2>
+          </div>
 
-            gap: "12px",
-
-            marginBottom:
-              "14px"
-          }}
-        >
-          <Sparkles
-            size={22}
-          />
-
-          <h2
-            style={{
-              fontSize:
-                "24px"
-            }}
-          >
-            AI Learning
-          </h2>
-        </div>
-
-        <p
-          style={{
-            color:
-              "rgba(255,255,255,0.76)",
-
-            lineHeight:
-              1.9
-          }}
-        >
-          Practice real spoken English with
-          short AI-generated conversations,
-          pronunciation help, vocabulary,
-          and natural daily communication.
-        </p>
-      </section>
+          <p className="text-xs leading-6 text-white/70">
+            Practice short real-life English conversations with pronunciation help and vocabulary support.
+          </p>
+        </section>
+      </div>
     </main>
   );
 }
