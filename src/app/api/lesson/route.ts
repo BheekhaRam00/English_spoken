@@ -1,10 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextResponse }
+  from "next/server";
 
-import { generateLesson } from "@/server/learning/generate-lesson";
+import {
+  generateLesson
+} from "@/server/learning/generate-lesson";
 
-import { logError } from "@/server/utils/logger";
+import {
+  logError
+} from "@/server/utils/logger";
 
-import { applyRateLimit } from "@/server/security/rate-limit";
+import {
+  applyRateLimit
+} from "@/server/security/rate-limit";
+
+export const dynamic =
+  "force-dynamic";
+
+export const revalidate = 0;
 
 type LessonMode =
   | "beginner"
@@ -54,11 +66,22 @@ export async function GET(
         mode
       });
 
-    return NextResponse.json({
-      success: true,
+    return NextResponse.json(
+      {
+        success: true,
 
-      lesson
-    });
+        lesson,
+
+        generatedAt:
+          Date.now()
+      },
+      {
+        headers: {
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate, proxy-revalidate"
+        }
+      }
+    );
   } catch (error) {
     logError(
       "Lesson API Error",
