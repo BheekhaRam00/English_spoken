@@ -47,22 +47,37 @@ function buildLessonPrompt(
   mode: string
 ) {
   return `
-Generate ONE high-quality spoken English lesson for Indian learners.
+Generate ONE SHORT spoken English lesson for Indian learners.
 
-Mode:
+MODE:
 ${mode}
 
-Requirements:
-- Practical spoken English
-- Real-life conversation
-- Easy to understand
-- Professional when needed
-- Natural English
-- Hindi translation
+VERY IMPORTANT RULES:
+- Keep lesson SHORT
+- Maximum 2 or 3 short sentences
+- NO long paragraphs
+- NO storytelling
+- NO essays
+- NO large conversations
+- Mobile friendly format
+- Beginner friendly spoken English
+- Practical daily usage
+- Natural English only
 
-Return STRICT JSON only.
+GOOD EXAMPLE:
+English:
+"Can I get a glass of water?"
+"Sure, I will bring it."
 
-JSON Format:
+Hindi:
+"क्या मुझे एक गिलास पानी मिल सकता है?"
+"ज़रूर, मैं लेकर आता हूँ।"
+
+Vocabulary should contain ONLY 3 words.
+
+Return STRICT JSON ONLY.
+
+JSON FORMAT:
 {
   "title": "",
   "english": "",
@@ -122,22 +137,12 @@ function generateFallbackLesson(
       `${mode} English Practice`,
 
     english:
-      "How was your day at work today?",
+      "How are you today?\nI am doing well.",
 
     hindi:
-      "आज आपका दिन काम पर कैसा था?",
+      "आज आप कैसे हैं?\nमैं अच्छा हूँ।",
 
     vocabulary: [
-      {
-        word: "Work",
-
-        meaning:
-          "काम",
-
-        pronunciation:
-          "वर्क"
-      },
-
       {
         word: "Today",
 
@@ -146,21 +151,41 @@ function generateFallbackLesson(
 
         pronunciation:
           "टुडे"
+      },
+
+      {
+        word: "Well",
+
+        meaning:
+          "अच्छा",
+
+        pronunciation:
+          "वेल"
+      },
+
+      {
+        word: "Doing",
+
+        meaning:
+          "कर रहा",
+
+        pronunciation:
+          "डूइंग"
       }
     ],
 
     phrases: [
       {
         phrase:
-          "How was your day?",
+          "How are you?",
 
         meaning:
-          "आपका दिन कैसा था?"
+          "आप कैसे हैं?"
       }
     ],
 
     pronunciationTip:
-      "Speak slowly and clearly while practicing."
+      "Speak slowly and clearly."
   };
 }
 
@@ -208,6 +233,28 @@ export async function generateLesson({
         mode
       );
     }
+
+    parsedLesson.english =
+      parsedLesson.english
+        ?.trim()
+        ?.slice(0, 220);
+
+    parsedLesson.hindi =
+      parsedLesson.hindi
+        ?.trim()
+        ?.slice(0, 220);
+
+    parsedLesson.vocabulary =
+      (
+        parsedLesson.vocabulary ||
+        []
+      ).slice(0, 3);
+
+    parsedLesson.phrases =
+      (
+        parsedLesson.phrases ||
+        []
+      ).slice(0, 2);
 
     return parsedLesson;
   } catch (error) {
