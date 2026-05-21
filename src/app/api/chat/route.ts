@@ -1,91 +1,79 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+import { env } from "@/server/env";
 
-type ChatMessage = {
-  role: "user" | "ai";
+import { trimConversation } from "@/server/ai/context-manager";
 
-  text: string;
-};
+import { validateAIResponse } from "@/server/ai/response-validator";
 
-type RequestBody = {
+import { getOfflineReply } from "@/server/ai/offline-replies";
+
+import { requestAICompletion } from "@/server/ai/provider-manager";
+
+import { cleanAIText } from "@/server/utils/text";
+
+import { validateChatRequest } from "@/server/security/request-validator";
+
+import { applyRateLimit } from "@/server/security/rate-limit";
+
+import {
+  logInfo,
+  logError
+} from "@/server/utils/logger";
+
+type ChatRequestBody = {
   message: string;
 
-  history?: ChatMessage[];
+  history?: {
+    role: "user" | "ai";
+    text: string;
+  }[];
 
   mode?:
     | "daily"
     | "business"
     | "interview"
     | "advanced";
-
-  voiceType?:
-    | "female"
-    | "male"
-    | "professional";
 };
-
-function buildPrompt(
-  message: string,
-  history: ChatMessage[] = [],
-  mode = "daily"
-) {
-  return `
-You are FluentPro AI.
-
-You help Indian users improve spoken English fluency.
-
-Mode:
-${mode}
-
-Rules:
-- Speak natural English.
-- Keep replies conversational.
-- Encourage confidence.
-- Help improve spoken English.
-- Use short responses.
-- Avoid markdown.
-- Keep response under 80 words.
-
-Conversation:
-${history
-  .map((item) => {
-    const role =
-      item.role === "user"
-        ? "User"
-        : "AI";
-
-    return `${role}: ${item.text}`;
-  })
-  .join("\n")}
-
-User: ${message}
-
-AI:
-`;
-}
 
 export async function POST(
   request: NextRequest
 ) {
   try {
-    const body: RequestBody =
-      await request.json();
+    const rateLimitPassed =
+      applyRateLimit(request);
 
-    const {
-      message,
-      history = [],
-      mode = "daily"
-    } = body;
-
-    if (!message?.trim()) {
-      return Response.json(
+    if (!rateLimitPassed) {
+      return NextResponse.json(
         {
           success: false,
 
-          error:
-            "Message is required."
+          message:
+            "Too many requests. Please try again later."
+        },
+        {
+          status: 429
+        }
+      );
+    }
+
+    const body: ChatRequestBody =
+      await request.json();
+
+    const validationResult =
+      validateChatRequest(
+        body
+      );
+
+    if (
+      !validationResult.success
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+
+          message:
+            validationResult.message
         },
         {
           status: 400
@@ -93,123 +81,123 @@ export async function POST(
       );
     }
 
-    const apiKey =
-      process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      return Response.json(
-        {
-          success: false,
-
-          error:
-            "Gemini API key is missing."
-        },
-        {
-          status: 500
-        }
-      );
-    }
-
-    const prompt =
-      buildPrompt(
-        message,
-        history,
-        mode
+    const cleanedMessage =
+      cleanAIText(
+        body.message
       );
 
-    const response = await fetch(
-      `${GEMINI_API_URL}?key=${apiKey}`,
-      {
-        method: "POST",
+    const history =
+      trimConversation(
+        body.history || [],
+        14
+      );
 
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ],
-
-          generationConfig: {
-            temperature: 0.8,
-
-            topK: 32,
-
-            topP: 1,
-
-            maxOutputTokens: 120
-          }
-        })
-      }
+    logInfo(
+      `Chat request received: ${cleanedMessage}`
     );
 
-    if (!response.ok) {
-      return Response.json(
-        {
-          success: false,
+    if (
+      !env.OPENROUTER_API_KEY
+    ) {
+      return NextResponse.json({
+        success: true,
 
-          error:
-            "Failed to generate AI response."
-        },
-        {
-          status: 500
-        }
-      );
+        reply:
+          getOfflineReply({
+            message:
+              cleanedMessage,
+
+            mode:
+              body.mode ||
+              "daily"
+          }),
+
+        source:
+          "offline"
+      });
     }
 
-    const data =
-      await response.json();
-
-    const aiText =
-      data?.candidates?.[0]
-        ?.content?.parts?.[0]
-        ?.text;
-
-    if (!aiText) {
-      return Response.json(
+    const aiReply =
+      await requestAICompletion(
         {
-          success: false,
+          message:
+            cleanedMessage,
 
-          error:
-            "Empty AI response."
-        },
-        {
-          status: 500
+          history,
+
+          mode:
+            body.mode ||
+            "daily",
+
+          apiKey:
+            env.OPENROUTER_API_KEY
         }
       );
+
+    const cleanedReply =
+      cleanAIText(
+        aiReply
+      );
+
+    const validReply =
+      validateAIResponse(
+        cleanedReply
+      );
+
+    if (!validReply) {
+      const fallbackReply =
+        getOfflineReply({
+          message:
+            cleanedMessage,
+
+          mode:
+            body.mode ||
+            "daily"
+        });
+
+      return NextResponse.json({
+        success: true,
+
+        reply:
+          fallbackReply,
+
+        source:
+          "fallback"
+      });
     }
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
 
-      message: aiText
-        .replace(/\*/g, "")
-        .replace(/\n+/g, " ")
-        .trim()
+      reply:
+        cleanedReply,
+
+      source: "ai"
     });
   } catch (error) {
-    console.error(
-      "Chat API error:",
+    logError(
+      "Chat Route Error",
       error
     );
 
-    return Response.json(
+    return NextResponse.json(
       {
-        success: false,
+        success: true,
 
-        error:
-          "Something went wrong."
+        reply:
+          getOfflineReply({
+            message:
+              "general",
+
+            mode:
+              "daily"
+          }),
+
+        source:
+          "emergency-fallback"
       },
       {
-        status: 500
+        status: 200
       }
     );
   }
