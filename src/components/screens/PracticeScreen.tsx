@@ -170,7 +170,7 @@ export default function PracticeScreen({
       setLoading(true);
 
       const currentInput =
-        input;
+        input.trim();
 
       setInput("");
 
@@ -255,41 +255,34 @@ export default function PracticeScreen({
     setError("");
   }
 
-  function handleReplay(
-    text: string
-  ) {
+  function handleReplay() {
     engine.replayLastAIMessage();
-
-    console.log(
-      "Replay:",
-      text
-    );
   }
 
   return (
     <main className="min-h-screen bg-[#0f172a] text-white">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:px-6">
-        <section className="flex items-center gap-4">
+      <div className="mx-auto w-full max-w-3xl px-3 py-4">
+        <section className="mb-4 flex items-center gap-3">
           <Link href="/">
-            <button className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 transition hover:bg-white/10">
+            <button className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
               <ArrowLeft
-                size={20}
+                size={18}
               />
             </button>
           </Link>
 
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-2xl font-bold">
               AI Practice
             </h1>
 
-            <p className="mt-1 text-sm text-white/70">
-              Practice spoken English naturally with AI.
+            <p className="text-xs text-white/60">
+              Real spoken English practice
             </p>
           </div>
         </section>
 
-        <section className="flex flex-wrap gap-3">
+        <section className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {MODES.map(
             (
               practiceMode
@@ -303,11 +296,11 @@ export default function PracticeScreen({
                     practiceMode
                   )
                 }
-                className={`rounded-2xl px-5 py-3 text-sm font-semibold capitalize transition ${
+                className={`rounded-2xl px-4 py-2 text-xs font-semibold capitalize whitespace-nowrap ${
                   mode ===
                   practiceMode
                     ? "bg-gradient-to-r from-purple-600 to-blue-600"
-                    : "border border-white/10 bg-white/5 hover:bg-white/10"
+                    : "border border-white/10 bg-white/5"
                 }`}
               >
                 {
@@ -318,7 +311,7 @@ export default function PracticeScreen({
           )}
         </section>
 
-        <section className="flex flex-wrap gap-3">
+        <section className="mb-4 flex gap-2 overflow-x-auto pb-1">
           {VOICES.map(
             (voice) => (
               <button
@@ -328,41 +321,41 @@ export default function PracticeScreen({
                     voice
                   )
                 }
-                className={`rounded-2xl px-5 py-3 text-sm font-semibold capitalize transition ${
+                className={`rounded-2xl px-4 py-2 text-xs font-semibold whitespace-nowrap ${
                   voiceType ===
                   voice
                     ? "bg-gradient-to-r from-purple-600 to-blue-600"
-                    : "border border-white/10 bg-white/5 hover:bg-white/10"
+                    : "border border-white/10 bg-white/5"
                 }`}
               >
-                {voice} Voice
+                {voice}
               </button>
             )
           )}
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
-          <div className="mb-5 flex items-center justify-between">
+        <section className="mb-4 rounded-3xl border border-white/10 bg-white/5 p-4">
+          <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600">
                 <Brain
-                  size={24}
+                  size={20}
                 />
               </div>
 
               <div>
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-lg font-semibold">
                   AI Conversation
                 </h2>
 
-                <p className="text-sm text-white/70">
-                  Real-time English speaking practice
+                <p className="text-xs text-white/60">
+                  Practice naturally
                 </p>
               </div>
             </div>
 
             <div
-              className={`h-4 w-4 rounded-full ${
+              className={`h-3 w-3 rounded-full ${
                 connected
                   ? "bg-green-500"
                   : "bg-red-500"
@@ -375,10 +368,10 @@ export default function PracticeScreen({
               onClick={
                 handleStartConversation
               }
-              className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 font-semibold transition hover:opacity-90"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold"
             >
               <Phone
-                size={20}
+                size={18}
               />
 
               Start Conversation
@@ -388,10 +381,10 @@ export default function PracticeScreen({
               onClick={
                 handleEndConversation
               }
-              className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 font-semibold transition hover:bg-white/10"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold"
             >
               <PhoneOff
-                size={20}
+                size={18}
               />
 
               End Conversation
@@ -399,8 +392,8 @@ export default function PracticeScreen({
           )}
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
-          <div className="flex max-h-[520px] min-h-[420px] flex-col gap-4 overflow-y-auto pr-1">
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-4">
+          <div className="mb-4 flex h-[300px] flex-col gap-3 overflow-y-auto">
             {messages.map(
               (message) => (
                 <div
@@ -414,32 +407,28 @@ export default function PracticeScreen({
                       : "justify-start"
                   }`}
                 >
-                  <div className="max-w-[88%]">
+                  <div className="max-w-[85%]">
                     <div
-                      className={`rounded-3xl px-5 py-4 text-[15px] leading-7 ${
+                      className={`rounded-2xl px-4 py-3 text-sm leading-6 ${
                         message.role ===
                         "user"
                           ? "bg-gradient-to-r from-purple-600 to-blue-600"
                           : "border border-white/10 bg-white/5"
                       }`}
                     >
-                      {
-                        message.text
-                      }
+                      {message.text}
                     </div>
 
                     {message.role ===
                       "ai" && (
                       <button
-                        onClick={() =>
-                          handleReplay(
-                            message.text
-                          )
+                        onClick={
+                          handleReplay
                         }
-                        className="mt-2 flex items-center gap-2 text-sm text-white/70 transition hover:text-white"
+                        className="mt-1 flex items-center gap-1 text-xs text-white/60"
                       >
                         <Volume2
-                          size={16}
+                          size={14}
                         />
 
                         Replay
@@ -451,13 +440,13 @@ export default function PracticeScreen({
             )}
 
             {loading && (
-              <div className="flex items-center gap-3 text-white/70">
+              <div className="flex items-center gap-2 text-sm text-white/70">
                 <Loader2
                   className="animate-spin"
-                  size={18}
+                  size={16}
                 />
 
-                AI is replying...
+                AI replying...
               </div>
             )}
 
@@ -467,16 +456,14 @@ export default function PracticeScreen({
               }
             />
           </div>
-        </section>
 
-        {error && (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {error}
-          </div>
-        )}
+          {error && (
+            <div className="mb-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+              {error}
+            </div>
+          )}
 
-        <section className="flex flex-col gap-4">
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <input
               value={input}
               onChange={(event) =>
@@ -496,8 +483,8 @@ export default function PracticeScreen({
                   handleSendMessage();
                 }
               }}
-              placeholder="Type your message..."
-              className="h-14 flex-1 rounded-2xl border border-white/10 bg-white/5 px-5 text-white outline-none placeholder:text-white/40"
+              placeholder="Type here..."
+              className="h-12 flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-white/40"
             />
 
             <button
@@ -507,40 +494,40 @@ export default function PracticeScreen({
               disabled={
                 loading
               }
-              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 transition hover:opacity-90 disabled:opacity-50"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 disabled:opacity-50"
             >
               <Send
-                size={20}
+                size={18}
               />
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="mt-3 grid grid-cols-2 gap-2">
             {!listening ? (
               <button
                 onClick={
                   handleStartListening
                 }
-                className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 font-semibold transition hover:opacity-90"
+                className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold"
               >
                 <Mic
-                  size={20}
+                  size={18}
                 />
 
-                Start Mic
+                Mic
               </button>
             ) : (
               <button
                 onClick={
                   handleStopListening
                 }
-                className="flex h-14 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 font-semibold transition hover:bg-white/10"
+                className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold"
               >
                 <MicOff
-                  size={20}
+                  size={18}
                 />
 
-                Stop Mic
+                Stop
               </button>
             )}
 
@@ -548,13 +535,13 @@ export default function PracticeScreen({
               onClick={
                 handleResetConversation
               }
-              className="flex h-14 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 font-semibold transition hover:bg-white/10"
+              className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold"
             >
               <RotateCcw
-                size={20}
+                size={18}
               />
 
-              Reset Chat
+              Reset
             </button>
           </div>
         </section>
