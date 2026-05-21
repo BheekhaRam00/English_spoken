@@ -29,8 +29,9 @@ import {
   OfflineEngine
 } from "./offline-engine";
 
-export type AppEngineConfig =
-  Record<string, never>;
+export type AppEngineConfig = {
+  apiKey?: string;
+};
 
 export class AppEngine {
   private learningEngine:
@@ -51,7 +52,9 @@ export class AppEngine {
   private offlineEngine:
     OfflineEngine;
 
-  constructor() {
+  constructor({
+    apiKey = ""
+  }: AppEngineConfig = {}) {
     this.settingsEngine =
       new SettingsEngine();
 
@@ -59,13 +62,15 @@ export class AppEngine {
       this.settingsEngine.getSettings();
 
     this.learningEngine =
-  new LearningEngine(
-    settings.learningMode,
-    apiKey
-  );
+      new LearningEngine(
+        settings.learningMode,
+        apiKey
+      );
 
     this.conversationEngine =
       new ConversationEngine({
+        apiKey,
+
         mode:
           settings.learningMode as AIConversationMode,
 
@@ -136,11 +141,9 @@ export class AppEngine {
   }
 
   async generateAILesson(
-    apiKey: string,
     level = "beginner"
   ) {
     return this.learningEngine.generateAILesson(
-      apiKey,
       level
     );
   }
@@ -252,7 +255,7 @@ export class AppEngine {
     );
   }
 
-  getDailyPracticePlan() {
+  async getDailyPracticePlan() {
     return this.learningEngine.getDailyPracticePlan();
   }
 
@@ -286,7 +289,7 @@ export class AppEngine {
     };
   }
 
-  buildStartupState() {
+  async buildStartupState() {
     return {
       settings:
         this.settingsEngine.getSettings(),
@@ -298,7 +301,7 @@ export class AppEngine {
         this.learningEngine.getNextLesson(),
 
       practice:
-        this.learningEngine.getDailyPracticePlan()
+        await this.learningEngine.getDailyPracticePlan()
     };
   }
 
