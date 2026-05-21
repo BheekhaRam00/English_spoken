@@ -1,25 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState
+} from "react";
 
 import Link from "next/link";
 
 import {
   ArrowLeft,
+  Brain,
+  Loader2,
   Mic,
   MicOff,
-  Volume2,
   Phone,
   PhoneOff,
-  Brain,
+  RotateCcw,
   Send,
-  RotateCcw
+  Volume2
 } from "lucide-react";
 
 import {
   AIConversationMode,
-  VoiceType,
-  ConversationMessage
+  ConversationMessage,
+  VoiceType
 } from "@/types";
 
 import {
@@ -42,18 +47,20 @@ type PracticeScreenProps = {
   ) => void;
 };
 
-const modes: AIConversationMode[] = [
-  "daily",
-  "business",
-  "interview",
-  "advanced"
-];
+const MODES: AIConversationMode[] =
+  [
+    "daily",
+    "business",
+    "interview",
+    "advanced"
+  ];
 
-const voices: VoiceType[] = [
-  "female",
-  "male",
-  "professional"
-];
+const VOICES: VoiceType[] =
+  [
+    "female",
+    "male",
+    "professional"
+  ];
 
 export default function PracticeScreen({
   engine,
@@ -73,11 +80,9 @@ export default function PracticeScreen({
   ] = useState(false);
 
   const [
-    messages,
-    setMessages
-  ] = useState<
-    ConversationMessage[]
-  >([]);
+    loading,
+    setLoading
+  ] = useState(false);
 
   const [
     input,
@@ -85,9 +90,16 @@ export default function PracticeScreen({
   ] = useState("");
 
   const [
-    loading,
-    setLoading
-  ] = useState(false);
+    messages,
+    setMessages
+  ] = useState<
+    ConversationMessage[]
+  >([]);
+
+  const [
+    error,
+    setError
+  ] = useState("");
 
   const messagesEndRef =
     useRef<HTMLDivElement | null>(
@@ -102,83 +114,97 @@ export default function PracticeScreen({
     );
   }, [messages]);
 
-  const startConversation =
-    async () => {
-      try {
-        const aiMessage =
-          await engine.connect(
-            (message) => {
-              setMessages(
-                (
-                  prev
-                ) => [
-                  ...prev,
-                  message
-                ]
-              );
-            }
-          );
+  async function handleStartConversation() {
+    try {
+      setError("");
 
-        setMessages([
-          aiMessage
-        ]);
-
-        setConnected(true);
-      } catch (error) {
-        console.error(
-          "Start conversation error:",
-          error
-        );
-      }
-    };
-
-  const endConversation =
-    () => {
-      engine.disconnect();
-
-      setConnected(false);
-
-      setListening(false);
-    };
-
-  const sendMessage =
-    async () => {
-      if (
-        !input.trim()
-      ) {
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        await engine.sendTextMessage(
-          input,
+      const aiMessage =
+        await engine.connect(
           (message) => {
             setMessages(
               (
-                prev
+                previous
               ) => [
-                ...prev,
+                ...previous,
                 message
               ]
             );
           }
         );
 
-        setInput("");
-      } catch (error) {
-        console.error(
-          "Send message error:",
-          error
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+      setMessages([
+        aiMessage
+      ]);
 
-  const startListening =
-    () => {
+      setConnected(true);
+    } catch (error) {
+      console.error(
+        "Conversation Start Error:",
+        error
+      );
+
+      setError(
+        "Unable to start conversation."
+      );
+    }
+  }
+
+  function handleEndConversation() {
+    engine.disconnect();
+
+    setConnected(false);
+
+    setListening(false);
+  }
+
+  async function handleSendMessage() {
+    try {
+      if (
+        !input.trim()
+      ) {
+        return;
+      }
+
+      setError("");
+
+      setLoading(true);
+
+      const currentInput =
+        input;
+
+      setInput("");
+
+      await engine.sendTextMessage(
+        currentInput,
+        (message) => {
+          setMessages(
+            (
+              previous
+            ) => [
+              ...previous,
+              message
+            ]
+          );
+        }
+      );
+    } catch (error) {
+      console.error(
+        "Send Message Error:",
+        error
+      );
+
+      setError(
+        "Unable to send message."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleStartListening() {
+    try {
+      setError("");
+
       setListening(true);
 
       engine.startVoiceListening(
@@ -186,605 +212,353 @@ export default function PracticeScreen({
         (message) => {
           setMessages(
             (
-              prev
+              previous
             ) => [
-              ...prev,
+              ...previous,
               message
             ]
           );
         },
-        () => {
+        (errorMessage) => {
           setListening(false);
+
+          setError(
+            errorMessage
+          );
         }
       );
-    };
-
-  const stopListening =
-    () => {
-      engine.stopVoiceListening();
+    } catch (error) {
+      console.error(
+        "Voice Listening Error:",
+        error
+      );
 
       setListening(false);
-    };
 
-  const clearConversation =
-    () => {
-      engine.clearConversation();
+      setError(
+        "Unable to start microphone."
+      );
+    }
+  }
 
-      setMessages([]);
-    };
+  function handleStopListening() {
+    engine.stopVoiceListening();
+
+    setListening(false);
+  }
+
+  function handleResetConversation() {
+    engine.clearConversation();
+
+    setMessages([]);
+
+    setError("");
+  }
+
+  function handleReplay(
+    text: string
+  ) {
+    engine.replayLastAIMessage();
+
+    console.log(
+      "Replay:",
+      text
+    );
+  }
 
   return (
-    <main className="page-container">
-      <section
-        className="fade-in"
-        style={{
-          display: "flex",
-          alignItems:
-            "center",
-          gap: "14px",
-          marginBottom:
-            "24px"
-        }}
-      >
-        <Link href="/">
-          <button
-            className="secondary-button"
-            style={{
-              width: "54px",
-              height: "54px",
-              padding: 0,
-              borderRadius:
-                "18px"
-            }}
-          >
-            <ArrowLeft
-              size={22}
-            />
-          </button>
-        </Link>
+    <main className="min-h-screen bg-[#0f172a] text-white">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:px-6">
+        <section className="flex items-center gap-4">
+          <Link href="/">
+            <button className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 transition hover:bg-white/10">
+              <ArrowLeft
+                size={20}
+              />
+            </button>
+          </Link>
 
-        <div>
-          <h1
-            className="page-title"
-            style={{
-              marginBottom:
-                "4px",
-              fontSize:
-                "34px"
-            }}
-          >
-            AI Practice
-          </h1>
+          <div>
+            <h1 className="text-3xl font-bold">
+              AI Practice
+            </h1>
 
-          <p
-            style={{
-              color:
-                "rgba(255,255,255,0.72)"
-            }}
-          >
-            Practice spoken English naturally.
-          </p>
-        </div>
-      </section>
+            <p className="mt-1 text-sm text-white/70">
+              Practice spoken English naturally with AI.
+            </p>
+          </div>
+        </section>
 
-      <section
-        className="fade-in"
-        style={{
-          display: "flex",
-          gap: "12px",
-          overflowX: "auto",
-          marginBottom:
-            "18px"
-        }}
-      >
-        {modes.map(
-          (
-            practiceMode
-          ) => (
-            <button
-              key={
-                practiceMode
-              }
-              onClick={() =>
-                onModeChange(
+        <section className="flex flex-wrap gap-3">
+          {MODES.map(
+            (
+              practiceMode
+            ) => (
+              <button
+                key={
                   practiceMode
-                )
-              }
-              style={{
-                minWidth:
-                  "120px",
-
-                height: "48px",
-
-                borderRadius:
-                  "16px",
-
-                background:
+                }
+                onClick={() =>
+                  onModeChange(
+                    practiceMode
+                  )
+                }
+                className={`rounded-2xl px-5 py-3 text-sm font-semibold capitalize transition ${
                   mode ===
                   practiceMode
-                    ? "linear-gradient(90deg, #9333ea, #2563eb)"
-                    : "rgba(255,255,255,0.05)",
-
-                color:
-                  "#ffffff",
-
-                fontWeight:
-                  600,
-
-                textTransform:
-                  "capitalize"
-              }}
-            >
-              {
-                practiceMode
-              }
-            </button>
-          )
-        )}
-      </section>
-
-      <section
-        className="fade-in"
-        style={{
-          display: "flex",
-          gap: "12px",
-          overflowX: "auto",
-          marginBottom:
-            "24px"
-        }}
-      >
-        {voices.map(
-          (voice) => (
-            <button
-              key={voice}
-              onClick={() =>
-                onVoiceChange(
-                  voice
-                )
-              }
-              style={{
-                minWidth:
-                  "140px",
-
-                height: "48px",
-
-                borderRadius:
-                  "16px",
-
-                background:
-                  voiceType ===
-                  voice
-                    ? "linear-gradient(90deg, #9333ea, #2563eb)"
-                    : "rgba(255,255,255,0.05)",
-
-                color:
-                  "#ffffff",
-
-                fontWeight:
-                  600,
-
-                textTransform:
-                  "capitalize"
-              }}
-            >
-              {voice}
-              {" "}
-              voice
-            </button>
-          )
-        )}
-      </section>
-
-      <section
-        className="glass-card fade-in"
-        style={{
-          padding: "24px",
-          marginBottom:
-            "24px"
-        }}
-      >
-        <div
-          style={{
-            display:
-              "flex",
-
-            alignItems:
-              "center",
-
-            justifyContent:
-              "space-between",
-
-            gap: "14px",
-
-            marginBottom:
-              "20px"
-          }}
-        >
-          <div
-            style={{
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap: "12px"
-            }}
-          >
-            <Brain
-              size={24}
-            />
-
-            <div>
-              <h2
-                style={{
-                  fontSize:
-                    "24px"
-                }}
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600"
+                    : "border border-white/10 bg-white/5 hover:bg-white/10"
+                }`}
               >
-                AI Conversation
-              </h2>
-
-              <p
-                style={{
-                  color:
-                    "rgba(255,255,255,0.68)"
-                }}
-              >
-                Real-time spoken English practice
-              </p>
-            </div>
-          </div>
-
-          <div
-            style={{
-              width: "14px",
-              height: "14px",
-              borderRadius:
-                "50%",
-              background:
-                connected
-                  ? "#22c55e"
-                  : "#ef4444"
-            }}
-          />
-        </div>
-
-        {!connected ? (
-          <button
-            className="primary-button"
-            onClick={
-              startConversation
-            }
-            style={{
-              width: "100%",
-              height: "60px",
-
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
-              gap: "12px"
-            }}
-          >
-            <Phone
-              size={22}
-            />
-
-            Start Conversation
-          </button>
-        ) : (
-          <button
-            className="secondary-button"
-            onClick={
-              endConversation
-            }
-            style={{
-              width: "100%",
-              height: "60px",
-
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
-              gap: "12px"
-            }}
-          >
-            <PhoneOff
-              size={22}
-            />
-
-            End Conversation
-          </button>
-        )}
-      </section>
-
-      <section
-        className="glass-card fade-in"
-        style={{
-          padding: "24px",
-
-          minHeight:
-            "420px",
-
-          marginBottom:
-            "24px"
-        }}
-      >
-        <div
-          style={{
-            display:
-              "flex",
-
-            flexDirection:
-              "column",
-
-            gap: "16px"
-          }}
-        >
-          {messages.map(
-            (message) => (
-              <div
-                key={
-                  message.id
+                {
+                  practiceMode
                 }
-                style={{
-                  alignSelf:
-                    message.role ===
-                    "user"
-                      ? "flex-end"
-                      : "flex-start",
-
-                  maxWidth:
-                    "88%"
-                }}
-              >
-                <div
-                  style={{
-                    padding:
-                      "18px",
-
-                    borderRadius:
-                      "22px",
-
-                    background:
-                      message.role ===
-                      "user"
-                        ? "linear-gradient(90deg, #9333ea, #2563eb)"
-                        : "rgba(255,255,255,0.06)"
-                  }}
-                >
-                  <p
-                    style={{
-                      lineHeight:
-                        1.8,
-
-                      color:
-                        "#ffffff"
-                    }}
-                  >
-                    {
-                      message.text
-                    }
-                  </p>
-                </div>
-
-                {message.role ===
-                  "ai" && (
-                  <button
-                    onClick={() =>
-                      engine.replayLastAIMessage()
-                    }
-                    style={{
-                      marginTop:
-                        "8px",
-
-                      display:
-                        "flex",
-
-                      alignItems:
-                        "center",
-
-                      gap: "8px",
-
-                      color:
-                        "rgba(255,255,255,0.7)"
-                    }}
-                  >
-                    <Volume2
-                      size={16}
-                    />
-
-                    Replay
-                  </button>
-                )}
-              </div>
+              </button>
             )
           )}
+        </section>
 
-          <div
-            ref={
-              messagesEndRef
-            }
-          />
-        </div>
-      </section>
+        <section className="flex flex-wrap gap-3">
+          {VOICES.map(
+            (voice) => (
+              <button
+                key={voice}
+                onClick={() =>
+                  onVoiceChange(
+                    voice
+                  )
+                }
+                className={`rounded-2xl px-5 py-3 text-sm font-semibold capitalize transition ${
+                  voiceType ===
+                  voice
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600"
+                    : "border border-white/10 bg-white/5 hover:bg-white/10"
+                }`}
+              >
+                {voice} Voice
+              </button>
+            )
+          )}
+        </section>
 
-      <section
-        className="fade-in"
-        style={{
-          display: "grid",
-          gap: "16px"
-        }}
-      >
-        <div
-          className="glass-card"
-          style={{
-            padding: "18px",
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+          <div className="mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600">
+                <Brain
+                  size={24}
+                />
+              </div>
 
-            display: "flex",
+              <div>
+                <h2 className="text-xl font-semibold">
+                  AI Conversation
+                </h2>
 
-            gap: "12px"
-          }}
-        >
-          <input
-            value={input}
-            onChange={(e) =>
-              setInput(
-                e.target.value
-              )
-            }
-            placeholder="Type your message..."
-            style={{
-              flex: 1,
+                <p className="text-sm text-white/70">
+                  Real-time English speaking practice
+                </p>
+              </div>
+            </div>
 
-              height: "54px",
-
-              borderRadius:
-                "18px",
-
-              background:
-                "rgba(255,255,255,0.05)",
-
-              color:
-                "#ffffff",
-
-              padding:
-                "0 18px",
-
-              border:
-                "1px solid rgba(255,255,255,0.08)"
-            }}
-          />
-
-          <button
-            onClick={
-              sendMessage
-            }
-            disabled={
-              loading
-            }
-            className="primary-button"
-            style={{
-              width: "58px",
-              height: "54px",
-
-              padding: 0,
-
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center"
-            }}
-          >
-            <Send
-              size={20}
+            <div
+              className={`h-4 w-4 rounded-full ${
+                connected
+                  ? "bg-green-500"
+                  : "bg-red-500"
+              }`}
             />
-          </button>
-        </div>
+          </div>
 
-        <div
-          style={{
-            display: "grid",
-
-            gridTemplateColumns:
-              "1fr 1fr",
-
-            gap: "14px"
-          }}
-        >
-          {!listening ? (
+          {!connected ? (
             <button
-              className="primary-button"
               onClick={
-                startListening
+                handleStartConversation
               }
-              style={{
-                display:
-                  "flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                gap: "10px"
-              }}
+              className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 font-semibold transition hover:opacity-90"
             >
-              <Mic
+              <Phone
                 size={20}
               />
 
-              Start Mic
+              Start Conversation
             </button>
           ) : (
             <button
-              className="secondary-button"
               onClick={
-                stopListening
+                handleEndConversation
               }
-              style={{
-                display:
-                  "flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                gap: "10px"
-              }}
+              className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 font-semibold transition hover:bg-white/10"
             >
-              <MicOff
+              <PhoneOff
                 size={20}
               />
 
-              Stop Mic
+              End Conversation
             </button>
           )}
+        </section>
 
-          <button
-            className="secondary-button"
-            onClick={
-              clearConversation
-            }
-            style={{
-              display:
-                "flex",
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+          <div className="flex max-h-[520px] min-h-[420px] flex-col gap-4 overflow-y-auto pr-1">
+            {messages.map(
+              (message) => (
+                <div
+                  key={
+                    message.id
+                  }
+                  className={`flex ${
+                    message.role ===
+                    "user"
+                      ? "justify-end"
+                      : "justify-start"
+                  }`}
+                >
+                  <div className="max-w-[88%]">
+                    <div
+                      className={`rounded-3xl px-5 py-4 text-[15px] leading-7 ${
+                        message.role ===
+                        "user"
+                          ? "bg-gradient-to-r from-purple-600 to-blue-600"
+                          : "border border-white/10 bg-white/5"
+                      }`}
+                    >
+                      {
+                        message.text
+                      }
+                    </div>
 
-              alignItems:
-                "center",
+                    {message.role ===
+                      "ai" && (
+                      <button
+                        onClick={() =>
+                          handleReplay(
+                            message.text
+                          )
+                        }
+                        className="mt-2 flex items-center gap-2 text-sm text-white/70 transition hover:text-white"
+                      >
+                        <Volume2
+                          size={16}
+                        />
 
-              justifyContent:
-                "center",
+                        Replay
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            )}
 
-              gap: "10px"
-            }}
-          >
-            <RotateCcw
-              size={20}
+            {loading && (
+              <div className="flex items-center gap-3 text-white/70">
+                <Loader2
+                  className="animate-spin"
+                  size={18}
+                />
+
+                AI is replying...
+              </div>
+            )}
+
+            <div
+              ref={
+                messagesEndRef
+              }
+            />
+          </div>
+        </section>
+
+        {error && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
+        <section className="flex flex-col gap-4">
+          <div className="flex gap-3">
+            <input
+              value={input}
+              onChange={(event) =>
+                setInput(
+                  event.target
+                    .value
+                )
+              }
+              onKeyDown={(
+                event
+              ) => {
+                if (
+                  event.key ===
+                    "Enter" &&
+                  !loading
+                ) {
+                  handleSendMessage();
+                }
+              }}
+              placeholder="Type your message..."
+              className="h-14 flex-1 rounded-2xl border border-white/10 bg-white/5 px-5 text-white outline-none placeholder:text-white/40"
             />
 
-            Reset Chat
-          </button>
-        </div>
-      </section>
+            <button
+              onClick={
+                handleSendMessage
+              }
+              disabled={
+                loading
+              }
+              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 transition hover:opacity-90 disabled:opacity-50"
+            >
+              <Send
+                size={20}
+              />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {!listening ? (
+              <button
+                onClick={
+                  handleStartListening
+                }
+                className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 font-semibold transition hover:opacity-90"
+              >
+                <Mic
+                  size={20}
+                />
+
+                Start Mic
+              </button>
+            ) : (
+              <button
+                onClick={
+                  handleStopListening
+                }
+                className="flex h-14 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 font-semibold transition hover:bg-white/10"
+              >
+                <MicOff
+                  size={20}
+                />
+
+                Stop Mic
+              </button>
+            )}
+
+            <button
+              onClick={
+                handleResetConversation
+              }
+              className="flex h-14 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 font-semibold transition hover:bg-white/10"
+            >
+              <RotateCcw
+                size={20}
+              />
+
+              Reset Chat
+            </button>
+          </div>
+        </section>
+      </div>
     </main>
   );
-              }
+}
