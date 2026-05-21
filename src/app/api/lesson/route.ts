@@ -1,232 +1,76 @@
-import { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+import { generateLesson } from "@/server/learning/generate-lesson";
 
-type RequestBody = {
-  mode?:
-    | "beginner"
-    | "daily"
-    | "office"
-    | "business"
-    | "interview"
-    | "advanced";
+import { logError } from "@/server/utils/logger";
 
-  userLevel?: string;
-};
+import { applyRateLimit } from "@/server/security/rate-limit";
 
-function buildLessonPrompt(
-  mode: string,
-  userLevel: string
-) {
-  return `
-You are an expert English teacher for Hindi-speaking Indian users.
+type LessonMode =
+  | "beginner"
+  | "daily"
+  | "office"
+  | "business"
+  | "interview"
+  | "pronunciation"
+  | "advanced";
 
-Generate ONE spoken English learning lesson.
-
-Mode:
-${mode}
-
-User Level:
-${userLevel}
-
-Requirements:
-- Practical spoken English
-- Real-life sentence
-- Natural communication
-- Professional tone when needed
-- Hindi translation
-- Vocabulary meanings
-- Useful phrases
-- Pronunciation tip
-
-Return ONLY valid JSON.
-
-JSON format:
-{
-  "title": "",
-  "english": "",
-  "hindi": "",
-  "vocabulary": [
-    {
-      "word": "",
-      "meaning": "",
-      "pronunciation": ""
-    }
-  ],
-  "phrases": [
-    {
-      "phrase": "",
-      "meaning": ""
-    }
-  ],
-  "pronunciationTip": ""
-}
-`;
-}
-
-function safeParseResponse(
-  text: string
+export async function GET(
+  request: Request
 ) {
   try {
-    const cleaned = text
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
+    const allowed =
+      applyRateLimit(
+        request
+      );
 
-    return JSON.parse(cleaned);
-  } catch (error) {
-    console.error(
-      "Lesson parse error:",
-      error
-    );
-
-    return null;
-  }
-}
-
-export async function POST(
-  request: NextRequest
-) {
-  try {
-    const body: RequestBody =
-      await request.json();
-
-    const {
-      mode = "daily",
-
-      userLevel = "beginner"
-    } = body;
-
-    const apiKey =
-      process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      return Response.json(
+    if (!allowed) {
+      return NextResponse.json(
         {
           success: false,
 
-          error:
-            "Gemini API key is missing."
+          message:
+            "Too many requests."
         },
         {
-          status: 500
+          status: 429
         }
       );
     }
 
-    const prompt =
-      buildLessonPrompt(
-        mode,
-        userLevel
+    const { searchParams } =
+      new URL(
+        request.url
       );
 
-    const response = await fetch(
-      `${GEMINI_API_URL}?key=${apiKey}`,
-      {
-        method: "POST",
+    const mode =
+      (searchParams.get(
+        "mode"
+      ) as LessonMode) ||
+      "daily";
 
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
+    const lesson =
+      await generateLesson({
+        mode
+      });
 
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ],
-
-          generationConfig: {
-            temperature: 0.9,
-
-            topK: 40,
-
-            topP: 1,
-
-            maxOutputTokens: 500
-          }
-        })
-      }
-    );
-
-    if (!response.ok) {
-      return Response.json(
-        {
-          success: false,
-
-          error:
-            "Failed to generate lesson."
-        },
-        {
-          status: 500
-        }
-      );
-    }
-
-    const data =
-      await response.json();
-
-    const lessonText =
-      data?.candidates?.[0]
-        ?.content?.parts?.[0]
-        ?.text;
-
-    if (!lessonText) {
-      return Response.json(
-        {
-          success: false,
-
-          error:
-            "Empty AI lesson response."
-        },
-        {
-          status: 500
-        }
-      );
-    }
-
-    const parsedLesson =
-      safeParseResponse(
-        lessonText
-      );
-
-    if (!parsedLesson) {
-      return Response.json(
-        {
-          success: false,
-
-          error:
-            "Failed to parse lesson response."
-        },
-        {
-          status: 500
-        }
-      );
-    }
-
-    return Response.json({
+    return NextResponse.json({
       success: true,
 
-      lesson: parsedLesson
+      lesson
     });
   } catch (error) {
-    console.error(
-      "Lesson API error:",
+    logError(
+      "Lesson API Error",
       error
     );
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
 
-        error:
-          "Something went wrong."
+        message:
+          "Unable to generate lesson."
       },
       {
         status: 500
