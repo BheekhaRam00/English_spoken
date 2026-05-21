@@ -18,6 +18,9 @@ export const dynamic =
 
 export const revalidate = 0;
 
+export const fetchCache =
+  "force-no-store";
+
 type LessonMode =
   | "beginner"
   | "daily"
@@ -27,10 +30,39 @@ type LessonMode =
   | "pronunciation"
   | "advanced";
 
+const VALID_MODES:
+  LessonMode[] = [
+  "beginner",
+  "daily",
+  "office",
+  "business",
+  "interview",
+  "pronunciation",
+  "advanced"
+];
+
+function getSafeMode(
+  mode: string | null
+): LessonMode {
+  if (
+    mode &&
+    VALID_MODES.includes(
+      mode as LessonMode
+    )
+  ) {
+    return mode as LessonMode;
+  }
+
+  return "daily";
+}
+
 export async function GET(
   request: Request
 ) {
   try {
+    /*
+    RATE LIMIT
+    */
     const allowed =
       applyRateLimit(
         request
@@ -45,40 +77,88 @@ export async function GET(
             "Too many requests."
         },
         {
-          status: 429
+          status: 429,
+
+          headers: {
+            "Cache-Control":
+              "no-store"
+          }
         }
       );
     }
 
+    /*
+    QUERY PARAMS
+    */
     const { searchParams } =
       new URL(
         request.url
       );
 
     const mode =
-      (searchParams.get(
-        "mode"
-      ) as LessonMode) ||
-      "daily";
+      getSafeMode(
+        searchParams.get(
+          "mode"
+        )
+      );
 
+    /*
+    GENERATE UNIQUE LESSON
+    */
     const lesson =
       await generateLesson({
         mode
       });
 
+    /*
+    SAFETY CHECK
+    */
+    if (
+      !lesson ||
+      !lesson.english
+    ) {
+      throw new Error(
+        "Invalid lesson generated."
+      );
+    }
+
+    /*
+    RESPONSE
+    */
     return NextResponse.json(
       {
         success: true,
 
         lesson,
 
+        mode,
+
         generatedAt:
-          Date.now()
+          Date.now(),
+
+        randomSeed:
+          Math.random()
+            .toString(36)
+            .slice(2, 10)
       },
       {
+        status: 200,
+
         headers: {
+          /*
+          VERY IMPORTANT
+          */
           "Cache-Control":
-            "no-store, no-cache, must-revalidate, proxy-revalidate"
+            "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+
+          Pragma:
+            "no-cache",
+
+          Expires:
+            "0",
+
+          "Surrogate-Control":
+            "no-store"
         }
       }
     );
@@ -93,10 +173,18 @@ export async function GET(
         success: false,
 
         message:
-          "Unable to generate lesson."
+          "Unable to generate lesson.",
+
+        generatedAt:
+          Date.now()
       },
       {
-        status: 500
+        status: 500,
+
+        headers: {
+          "Cache-Control":
+            "no-store"
+        }
       }
     );
   }
