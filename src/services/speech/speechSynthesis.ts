@@ -23,13 +23,16 @@ export type SpeakTextOptions = {
   ) => void;
 };
 
-function getVoiceByType(
+function getIndianVoice(
   voiceType:
     | "female"
     | "male"
     | "professional"
 ) {
-  if (typeof window === "undefined") {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
     return null;
   }
 
@@ -40,36 +43,182 @@ function getVoiceByType(
     return null;
   }
 
-  if (voiceType === "female") {
-    return (
-      voices.find((voice) =>
+  const indianVoices =
+    voices.filter(
+      (voice) =>
+        voice.lang
+          .toLowerCase()
+          .includes("en-in") ||
+
         voice.name
           .toLowerCase()
-          .includes("female")
+          .includes("india") ||
+
+        voice.name
+          .toLowerCase()
+          .includes("indian")
+    );
+
+  if (
+    indianVoices.length
+  ) {
+    if (
+      voiceType ===
+      "female"
+    ) {
+      return (
+        indianVoices.find(
+          (voice) =>
+            voice.name
+              .toLowerCase()
+              .includes(
+                "female"
+              )
+        ) ||
+
+        indianVoices.find(
+          (voice) =>
+            voice.name
+              .toLowerCase()
+              .includes(
+                "google"
+              )
+        ) ||
+
+        indianVoices[0]
+      );
+    }
+
+    if (
+      voiceType ===
+      "male"
+    ) {
+      return (
+        indianVoices.find(
+          (voice) =>
+            voice.name
+              .toLowerCase()
+              .includes(
+                "male"
+              )
+        ) ||
+
+        indianVoices[0]
+      );
+    }
+
+    return (
+      indianVoices.find(
+        (voice) =>
+          voice.name
+            .toLowerCase()
+            .includes(
+              "google"
+            )
       ) ||
 
-      voices.find((voice) =>
-        voice.name
-          .toLowerCase()
-          .includes("zira")
+      indianVoices[0]
+    );
+  }
+
+  return null;
+}
+
+function getVoiceByType(
+  voiceType:
+    | "female"
+    | "male"
+    | "professional"
+) {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return null;
+  }
+
+  const voices =
+    window.speechSynthesis.getVoices();
+
+  if (!voices.length) {
+    return null;
+  }
+
+  const indianVoice =
+    getIndianVoice(
+      voiceType
+    );
+
+  if (indianVoice) {
+    return indianVoice;
+  }
+
+  if (
+    voiceType ===
+    "female"
+  ) {
+    return (
+      voices.find(
+        (voice) =>
+          voice.name
+            .toLowerCase()
+            .includes(
+              "female"
+            )
+      ) ||
+
+      voices.find(
+        (voice) =>
+          voice.name
+            .toLowerCase()
+            .includes(
+              "zira"
+            )
+      ) ||
+
+      voices.find(
+        (voice) =>
+          voice.name
+            .toLowerCase()
+            .includes(
+              "google"
+            )
       ) ||
 
       voices[0]
     );
   }
 
-  if (voiceType === "male") {
+  if (
+    voiceType ===
+    "male"
+  ) {
     return (
-      voices.find((voice) =>
-        voice.name
-          .toLowerCase()
-          .includes("male")
+      voices.find(
+        (voice) =>
+          voice.name
+            .toLowerCase()
+            .includes(
+              "male"
+            )
       ) ||
 
-      voices.find((voice) =>
-        voice.name
-          .toLowerCase()
-          .includes("david")
+      voices.find(
+        (voice) =>
+          voice.name
+            .toLowerCase()
+            .includes(
+              "david"
+            )
+      ) ||
+
+      voices.find(
+        (voice) =>
+          voice.name
+            .toLowerCase()
+            .includes(
+              "google"
+            )
       ) ||
 
       voices[0]
@@ -77,10 +226,13 @@ function getVoiceByType(
   }
 
   return (
-    voices.find((voice) =>
-      voice.name
-        .toLowerCase()
-        .includes("google")
+    voices.find(
+      (voice) =>
+        voice.name
+          .toLowerCase()
+          .includes(
+            "google"
+          )
     ) || voices[0]
   );
 }
@@ -88,11 +240,13 @@ function getVoiceByType(
 export function speakText({
   text,
 
-  voiceType = "female",
+  voiceType =
+    "female",
 
-  language = "en-US",
+  language =
+    "en-IN",
 
-  rate = 0.95,
+  rate = 0.88,
 
   pitch = 1,
 
@@ -106,13 +260,17 @@ export function speakText({
 }: SpeakTextOptions) {
   try {
     if (
-      typeof window === "undefined"
+      typeof window ===
+      "undefined"
     ) {
       return;
     }
 
     if (
-      !("speechSynthesis" in window)
+      !(
+        "speechSynthesis" in
+        window
+      )
     ) {
       onError?.(
         "Speech synthesis is not supported on this device."
@@ -121,49 +279,86 @@ export function speakText({
       return;
     }
 
-    const utterance =
-      new SpeechSynthesisUtterance(
-        text
-      );
+    const loadAndSpeak =
+      () => {
+        const utterance =
+          new SpeechSynthesisUtterance(
+            text
+          );
 
-    utterance.lang = language;
+        utterance.lang =
+          language;
 
-    utterance.rate = rate;
+        utterance.rate =
+          rate;
 
-    utterance.pitch =
-      voiceType === "female"
-        ? 1.08
-        : pitch;
+        utterance.pitch =
+          voiceType ===
+          "female"
+            ? 1.02
+            : pitch;
 
-    utterance.volume = volume;
+        utterance.volume =
+          volume;
 
-    const selectedVoice =
-      getVoiceByType(voiceType);
+        const selectedVoice =
+          getVoiceByType(
+            voiceType
+          );
 
-    if (selectedVoice) {
-      utterance.voice =
-        selectedVoice;
+        if (
+          selectedVoice
+        ) {
+          utterance.voice =
+            selectedVoice;
+
+          utterance.lang =
+            selectedVoice.lang;
+        }
+
+        utterance.onstart =
+          () => {
+            onStart?.();
+          };
+
+        utterance.onend =
+          () => {
+            onEnd?.();
+          };
+
+        utterance.onerror =
+          () => {
+            onError?.(
+              "Unable to play voice."
+            );
+          };
+
+        window.speechSynthesis.cancel();
+
+        window.speechSynthesis.speak(
+          utterance
+        );
+      };
+
+    const voices =
+      window.speechSynthesis.getVoices();
+
+    if (
+      voices.length === 0
+    ) {
+      window.speechSynthesis.onvoiceschanged =
+        () => {
+          loadAndSpeak();
+        };
+
+      setTimeout(() => {
+        loadAndSpeak();
+      }, 400);
+
+      return;
     }
 
-    utterance.onstart = () => {
-      onStart?.();
-    };
-
-    utterance.onend = () => {
-      onEnd?.();
-    };
-
-    utterance.onerror = () => {
-      onError?.(
-        "Unable to play voice."
-      );
-    };
-
-    window.speechSynthesis.cancel();
-
-    window.speechSynthesis.speak(
-      utterance
-    );
+    loadAndSpeak();
   } catch (error) {
     console.error(
       "Speech synthesis error:",
@@ -178,7 +373,8 @@ export function speakText({
 
 export function stopSpeaking() {
   if (
-    typeof window === "undefined"
+    typeof window ===
+    "undefined"
   ) {
     return;
   }
@@ -188,7 +384,8 @@ export function stopSpeaking() {
 
 export function pauseSpeaking() {
   if (
-    typeof window === "undefined"
+    typeof window ===
+    "undefined"
   ) {
     return;
   }
@@ -198,7 +395,8 @@ export function pauseSpeaking() {
 
 export function resumeSpeaking() {
   if (
-    typeof window === "undefined"
+    typeof window ===
+    "undefined"
   ) {
     return;
   }
@@ -208,7 +406,8 @@ export function resumeSpeaking() {
 
 export function getAvailableVoices() {
   if (
-    typeof window === "undefined"
+    typeof window ===
+    "undefined"
   ) {
     return [];
   }
@@ -216,7 +415,10 @@ export function getAvailableVoices() {
   return window.speechSynthesis
     .getVoices()
     .map((voice) => ({
-      name: voice.name,
-      lang: voice.lang
+      name:
+        voice.name,
+
+      lang:
+        voice.lang
     }));
-}
+      }
