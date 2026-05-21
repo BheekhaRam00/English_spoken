@@ -7,6 +7,12 @@ export type LearningMode =
   | "pronunciation"
   | "advanced";
 
+export type AIConversationMode =
+  | "daily"
+  | "business"
+  | "interview"
+  | "advanced";
+
 export type ConversationRole =
   | "user"
   | "ai";
@@ -35,6 +41,8 @@ export type LessonItem = {
 
   category: string;
 
+  title?: string;
+
   english?: string;
 
   hindi?: string;
@@ -43,38 +51,36 @@ export type LessonItem = {
 
   translation?: string;
 
+  pronunciationTip?: string;
+
   vocabulary: VocabularyItem[];
 
   phrases?: PhraseItem[];
 };
 
-export type ConversationMessage = {
-  id: number;
+export type ConversationMessage =
+  {
+    id: number;
 
-  role: ConversationRole;
+    role: ConversationRole;
 
-  text: string;
+    text: string;
 
-  createdAt?: string;
-};
+    createdAt?: string;
+  };
 
-export type AIConversationMode =
-  | "daily"
-  | "business"
-  | "interview"
-  | "advanced";
+export type PronunciationFeedback =
+  {
+    score: number;
 
-export type PronunciationFeedback = {
-  score: number;
+    level:
+      | "excellent"
+      | "good"
+      | "average"
+      | "needs-improvement";
 
-  level:
-    | "excellent"
-    | "good"
-    | "average"
-    | "needs-improvement";
-
-  feedback: string;
-};
+    feedback: string;
+  };
 
 export type PracticeSession = {
   id: string;
@@ -116,11 +122,12 @@ export type SubtitleState = {
   text: string;
 };
 
-export type SpeechRecognitionResult = {
-  transcript: string;
+export type SpeechRecognitionResult =
+  {
+    transcript: string;
 
-  confidence?: number;
-};
+    confidence?: number;
+  };
 
 export type LearningPhrase = {
   id: number;
@@ -136,27 +143,29 @@ export type LearningPhrase = {
   pronunciation: string;
 };
 
-export type PronunciationTip = {
-  id: number;
+export type PronunciationTip =
+  {
+    id: number;
 
-  title: string;
+    title: string;
 
-  description: string;
+    description: string;
 
-  example: string;
+    example: string;
 
-  tip: string;
-};
+    tip: string;
+  };
 
-export type ConversationStarter = {
-  id: number;
+export type ConversationStarter =
+  {
+    id: number;
 
-  mode: AIConversationMode;
+    mode: AIConversationMode;
 
-  starter: string;
+    starter: string;
 
-  translation: string;
-};
+    translation: string;
+  };
 
 export type AILearningMode = {
   id: number;
@@ -170,4 +179,116 @@ export type AILearningMode = {
   focus: string[];
 
   aiPrompt: string;
+};
+
+export type ChatApiRequest = {
+  message: string;
+
+  history?: {
+    role: "user" | "ai";
+
+    text: string;
+  }[];
+
+  mode?: AIConversationMode;
+};
+
+export type ChatApiResponse = {
+  success: boolean;
+
+  reply?: string;
+
+  source?: string;
+
+  message?: string;
+};
+
+export type LessonApiResponse =
+  {
+    success: boolean;
+
+    lesson?: LessonItem;
+
+    message?: string;
+  };
+
+export type PracticeExercise = {
+  question: string;
+
+  hint: string;
+
+  sampleAnswer: string;
+};
+
+export type PracticeApiResponse =
+  {
+    success: boolean;
+
+    exercises?: PracticeExercise[];
+
+    message?: string;
+  };
+
+export type FeedbackApiResponse =
+  {
+    success: boolean;
+
+    feedback?: {
+      score: number;
+
+      fluency: string;
+
+      pronunciation: string;
+
+      grammar: string;
+
+      confidence: string;
+
+      improvement: string;
+    };
+
+    message?: string;
+  };
+
+export type HealthApiResponse = {
+  success: boolean;
+
+  status: string;
+
+  timestamp: string;
+
+  services?: {
+    api: boolean;
+
+    ai: boolean;
+
+    environment: boolean;
+  };
+};
+
+export type AIProvider =
+  | "openrouter"
+  | "deepseek"
+  | "mock";
+
+export type CacheEntry<T> = {
+  value: T;
+
+  expiresAt: number;
+};
+
+export type RateLimitResult = {
+  success: boolean;
+
+  remaining?: number;
+
+  retryAfter?: number;
+};
+
+export type AppError = {
+  message: string;
+
+  code?: string;
+
+  status?: number;
 };
