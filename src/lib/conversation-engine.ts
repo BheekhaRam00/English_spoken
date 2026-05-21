@@ -14,14 +14,8 @@ import {
   speakText
 } from "@/services/speech/speechSynthesis";
 
-import {
-  generateId
-} from "@/utils/helpers";
-
 export type ConversationEngineConfig =
   {
-    apiKey?: string;
-
     mode?: AIConversationMode;
 
     voiceType?: VoiceType;
@@ -37,8 +31,6 @@ export type ConversationEngineReply =
   };
 
 export class ConversationEngine {
-  private apiKey: string;
-
   private mode: AIConversationMode;
 
   private voiceType: VoiceType;
@@ -48,16 +40,12 @@ export class ConversationEngine {
   private history: ConversationMessage[];
 
   constructor({
-    apiKey = "",
-
     mode = "daily",
 
     voiceType = "female",
 
     autoSpeak = true
   }: ConversationEngineConfig = {}) {
-    this.apiKey = apiKey;
-
     this.mode = mode;
 
     this.voiceType = voiceType;
@@ -155,36 +143,36 @@ export class ConversationEngine {
       );
 
     try {
-      if (this.apiKey) {
-        aiReply =
-          await continueConversation(
-            {
-              userMessage:
-                cleaned,
+      aiReply =
+        await continueConversation(
+          {
+            userMessage:
+              cleaned,
 
-              apiKey:
-                this.apiKey,
+            history:
+              this.history.map(
+                (item) => ({
+                  role:
+                    item.role,
 
-              history:
-                this.history.map(
-                  (item) => ({
-                    role:
-                      item.role,
+                  text:
+                    item.text
+                })
+              ),
 
-                    text:
-                      item.text
-                  })
-                ),
-
-              mode: this.mode
-            }
-          );
-      }
+            mode: this.mode
+          }
+        );
     } catch (error) {
       console.error(
         "Conversation engine error:",
         error
       );
+
+      aiReply =
+        generateFallbackReply(
+          cleaned
+        );
     }
 
     const aiMessage: ConversationMessage =
@@ -276,4 +264,4 @@ export class ConversationEngine {
       this.history.length > 0
     );
   }
-        }
+}
