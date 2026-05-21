@@ -263,15 +263,16 @@ export class AudioCallEngine {
       onError: (error) => {
         this.listening = false;
 
-        onError?.(error);
+        onError?.(
+          error instanceof Error
+            ? error.message
+            : "Audio call error"
+        );
       },
 
       onResult: async (
-        result
+        transcript
       ) => {
-        const transcript =
-          result.transcript;
-
         onTranscript?.(
           transcript
         );
@@ -340,4 +341,4 @@ export class AudioCallEngine {
     this.voiceType =
       voiceType;
   }
-  }
+}
