@@ -23,59 +23,74 @@ export type SpeakTextOptions = {
   ) => void;
 };
 
-function getIndianVoice(
+let cachedVoices:
+  SpeechSynthesisVoice[] = [];
+
+function loadVoices() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return [];
+  }
+
+  const voices =
+    window.speechSynthesis.getVoices();
+
+  if (voices.length) {
+    cachedVoices = voices;
+  }
+
+  return cachedVoices;
+}
+
+function getBestVoice(
   voiceType:
     | "female"
     | "male"
     | "professional"
 ) {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return null;
-  }
-
   const voices =
-    window.speechSynthesis.getVoices();
+    loadVoices();
 
   if (!voices.length) {
     return null;
   }
 
   const indianVoices =
-    voices.filter((voice) =>
-      voice.lang
-        .toLowerCase()
-        .includes("en-in")
-    );
+    voices.filter((voice) => {
+      const lang =
+        voice.lang.toLowerCase();
 
-  if (
-    !indianVoices.length
-  ) {
-    return voices[0];
-  }
+      return (
+        lang.includes("en-in") ||
+        lang.includes("hi-in")
+      );
+    });
+
+  const searchPool =
+    indianVoices.length
+      ? indianVoices
+      : voices;
 
   if (
     voiceType ===
-    "female"
+    "professional"
   ) {
     return (
-      indianVoices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes("female")
+      searchPool.find((v) =>
+        v.name
+          .toLowerCase()
+          .includes("google")
       ) ||
 
-      indianVoices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes("google")
+      searchPool.find((v) =>
+        v.name
+          .toLowerCase()
+          .includes("microsoft")
       ) ||
 
-      indianVoices[0]
+      searchPool[0]
     );
   }
 
@@ -83,35 +98,51 @@ function getIndianVoice(
     voiceType === "male"
   ) {
     return (
-      indianVoices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes("male")
-      ) ||
+      searchPool.find((v) => {
+        const name =
+          v.name.toLowerCase();
 
-      indianVoices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes("microsoft")
-      ) ||
+        return (
+          name.includes(
+            "male"
+          ) ||
+          name.includes(
+            "david"
+          ) ||
+          name.includes(
+            "mark"
+          ) ||
+          name.includes(
+            "rahul"
+          )
+        );
+      }) ||
 
-      indianVoices[
-        indianVoices.length - 1
+      searchPool[
+        searchPool.length - 1
       ]
     );
   }
 
   return (
-    indianVoices.find(
-      (voice) =>
-        voice.name
-          .toLowerCase()
-          .includes("google")
-    ) ||
+    searchPool.find((v) => {
+      const name =
+        v.name.toLowerCase();
 
-    indianVoices[0]
+      return (
+        name.includes(
+          "female"
+        ) ||
+        name.includes(
+          "zira"
+        ) ||
+        name.includes(
+          "priya"
+        )
+      );
+    }) ||
+
+    searchPool[0]
   );
 }
 
@@ -155,46 +186,55 @@ export function speakText({
       return;
     }
 
+    if (!text.trim()) {
+      return;
+    }
+
     const utterance =
       new SpeechSynthesisUtterance(
         text
       );
 
     const selectedVoice =
-      getIndianVoice(
+      getBestVoice(
         voiceType
       );
 
     utterance.lang =
-      "en-IN";
+      language;
 
     utterance.volume =
       volume;
+
+    /*
+      IMPORTANT:
+      Lower speed = less robotic
+    */
 
     if (
       voiceType ===
       "female"
     ) {
       utterance.rate =
-        rate ?? 0.72;
+        rate ?? 0.58;
 
       utterance.pitch =
-        pitch ?? 1.02;
+        pitch ?? 0.92;
     } else if (
       voiceType ===
       "male"
     ) {
       utterance.rate =
-        rate ?? 0.68;
+        rate ?? 0.56;
+
+      utterance.pitch =
+        pitch ?? 0.72;
+    } else {
+      utterance.rate =
+        rate ?? 0.60;
 
       utterance.pitch =
         pitch ?? 0.82;
-    } else {
-      utterance.rate =
-        rate ?? 0.75;
-
-      utterance.pitch =
-        pitch ?? 0.92;
     }
 
     if (selectedVoice) {
@@ -225,7 +265,7 @@ export function speakText({
       window.speechSynthesis.speak(
         utterance
       );
-    }, 120);
+    }, 250);
   } catch (error) {
     console.error(
       "Speech synthesis error:",
@@ -279,10 +319,22 @@ export function getAvailableVoices() {
     return [];
   }
 
-  return window.speechSynthesis
-    .getVoices()
-    .map((voice) => ({
+  return loadVoices().map(
+    (voice) => ({
       name: voice.name,
       lang: voice.lang
-    }));
+    })
+  );
+}
+
+if (
+  typeof window !==
+  "undefined"
+) {
+  window.speechSynthesis.onvoiceschanged =
+    () => {
+      loadVoices();
+    };
+
+  loadVoices();
 }
