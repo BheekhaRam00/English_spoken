@@ -1,11 +1,15 @@
-import { buildSystemPrompt }
-  from "@/server/ai/system-prompts";
+import {
+  buildSystemPrompt
+} from "@/server/ai/system-prompts";
 
-import { cleanAIText }
-  from "@/server/utils/text";
+import {
+  cleanAIText
+} from "@/server/utils/text";
 
-import { logError }
-  from "@/server/utils/logger";
+import {
+  logError,
+  logInfo
+} from "@/server/utils/logger";
 
 type OpenRouterParams = {
   apiKey: string;
@@ -14,6 +18,7 @@ type OpenRouterParams = {
 
   history: {
     role: "user" | "ai";
+
     text: string;
   }[];
 
@@ -40,13 +45,15 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 /*
-FAST + STABLE MODELS
+WORKING STABLE FREE MODELS
 */
-const PRIMARY_MODEL =
-  "mistralai/mistral-7b-instruct:free";
+const MODELS = [
+  "deepseek/deepseek-chat-v3-0324:free",
 
-const FALLBACK_MODEL =
-  "openchat/openchat-7b:free";
+  "meta-llama/llama-3.3-8b-instruct:free",
+
+  "microsoft/phi-3-mini-128k-instruct:free"
+];
 
 async function makeRequest({
   apiKey,
@@ -56,99 +63,142 @@ async function makeRequest({
   history
 }: {
   apiKey: string;
+
   model: string;
+
   systemPrompt: string;
+
   message: string;
+
   history: {
     role: "user" | "ai";
+
     text: string;
   }[];
 }) {
-  const messages = [
-    {
-      role: "system",
-      content: `
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(() => {
+      controller.abort();
+    }, 12000);
+
+  try {
+    const messages = [
+      {
+        role: "system",
+
+        content: `
 ${systemPrompt}
 
-VERY IMPORTANT RULES:
-- Keep replies SHORT.
+IMPORTANT RULES:
+- Reply naturally.
+- Use spoken English.
 - Maximum 3 short sentences.
-- Use simple spoken English.
-- Do NOT generate paragraphs.
-- Do NOT generate stories.
-- Keep dialogue format clean.
+- No paragraph.
+- No markdown.
 - One sentence per line.
-- Sound natural and human.
+- Keep conversation engaging.
+- Ask small follow-up questions sometimes.
 `
-    },
-
-    ...history.slice(-6).map(
-      (item) => ({
-        role:
-          item.role === "ai"
-            ? "assistant"
-            : "user",
-
-        content: item.text
-      })
-    ),
-
-    {
-      role: "user",
-      content: message
-    }
-  ];
-
-  const response = await fetch(
-    OPENROUTER_URL,
-    {
-      method: "POST",
-
-      headers: {
-        Authorization:
-          `Bearer ${apiKey}`,
-
-        "Content-Type":
-          "application/json"
       },
 
-      body: JSON.stringify({
-        model,
+      ...history
+        .slice(-8)
+        .map((item) => ({
+          role:
+            item.role === "ai"
+              ? "assistant"
+              : "user",
 
-        messages,
+          content:
+            item.text
+        })),
 
-        temperature: 0.4,
+      {
+        role: "user",
 
-        max_tokens: 80,
+        content: message
+      }
+    ];
 
-        top_p: 0.9
-      })
+    const response =
+      await fetch(
+        OPENROUTER_URL,
+        {
+          method: "POST",
+
+          signal:
+            controller.signal,
+
+          headers: {
+            Authorization:
+              `Bearer ${apiKey}`,
+
+            "Content-Type":
+              "application/json",
+
+            "HTTP-Referer":
+              "https://fluentpro-ai.vercel.app",
+
+            "X-Title":
+              "FluentPro AI"
+          },
+
+          body: JSON.stringify({
+            model,
+
+            messages,
+
+            temperature: 0.7,
+
+            top_p: 0.9,
+
+            frequency_penalty: 0.2,
+
+            presence_penalty: 0.2,
+
+            max_tokens: 120
+          })
+        }
+      );
+
+    const data:
+      OpenRouterResponse =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error
+          ?.message ||
+          `Model failed: ${model}`
+      );
     }
-  );
 
-  const data: OpenRouterResponse =
-    await response.json();
+    const aiReply =
+      data?.choices?.[0]
+        ?.message?.content;
 
-  if (!response.ok) {
-    throw new Error(
-      data?.error?.message ||
-      `Model failed: ${model}`
+    if (
+      !aiReply ||
+      !aiReply.trim()
+    ) {
+      throw new Error(
+        `Empty response from ${model}`
+      );
+    }
+
+    logInfo(
+      `OpenRouter success: ${model}`
     );
+
+    return cleanAIText(
+      aiReply
+    ).trim();
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const aiReply =
-    data?.choices?.[0]
-      ?.message?.content;
-
-  if (!aiReply) {
-    throw new Error(
-      "Empty AI response"
-    );
-  }
-
-  return cleanAIText(
-    aiReply
-  ).trim();
 }
 
 export async function callOpenRouter({
@@ -157,42 +207,43 @@ export async function callOpenRouter({
   history,
   mode
 }: OpenRouterParams) {
-  try {
-    const systemPrompt =
-      buildSystemPrompt(
-        mode
-      );
+  const systemPrompt =
+    buildSystemPrompt(
+      mode
+    );
 
+  let lastError:
+    unknown = null;
+
+  for (const model of MODELS) {
     try {
       return await makeRequest({
         apiKey,
-        model:
-          PRIMARY_MODEL,
+
+        model,
+
         systemPrompt,
+
         message,
+
         history
       });
-    } catch (primaryError) {
+    } catch (error) {
+      lastError = error;
+
       logError(
-        "Primary model failed",
-        primaryError
+        `Model Failed: ${model}`,
+        error
       );
-
-      return await makeRequest({
-        apiKey,
-        model:
-          FALLBACK_MODEL,
-        systemPrompt,
-        message,
-        history
-      });
     }
-  } catch (error) {
-    logError(
-      "OpenRouter Error",
-      error
-    );
-
-    throw error;
   }
+
+  logError(
+    "All OpenRouter Models Failed",
+    lastError
+  );
+
+  throw new Error(
+    "All AI providers failed."
+  );
 }
