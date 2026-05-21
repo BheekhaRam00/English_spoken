@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState
+} from "react";
 
 import PracticeScreen from "@/components/screens/PracticeScreen";
 
@@ -24,15 +28,14 @@ export default function PracticePage() {
       "female"
     );
 
-  const [engine] = useState(
+  const engine = useMemo(
     () =>
       new AudioCallEngine({
-        mode: "daily",
-
-        voiceType: "female",
-
+        mode,
+        voiceType,
         autoSpeak: true
-      })
+      }),
+    []
   );
 
   useEffect(() => {
