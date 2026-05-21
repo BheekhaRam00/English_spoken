@@ -1,30 +1,31 @@
-export type SpeakTextOptions = {
-  text: string;
+export type SpeakTextOptions =
+  {
+    text: string;
 
-  voiceType?:
-    | "female"
-    | "male"
-    | "professional";
+    voiceType?:
+      | "female"
+      | "male"
+      | "professional";
 
-  language?: string;
+    language?: string;
 
-  rate?: number;
+    rate?: number;
 
-  pitch?: number;
+    pitch?: number;
 
-  volume?: number;
+    volume?: number;
 
-  onStart?: () => void;
+    onStart?: () => void;
 
-  onEnd?: () => void;
+    onEnd?: () => void;
 
-  onError?: (
-    error: string
-  ) => void;
-};
+    onError?: (
+      error: string
+    ) => void;
+  };
 
-let cachedVoices:
-  SpeechSynthesisVoice[] = [];
+let voicesLoaded =
+  false;
 
 function loadVoices() {
   if (
@@ -34,17 +35,28 @@ function loadVoices() {
     return [];
   }
 
-  const voices =
-    window.speechSynthesis.getVoices();
+  const synth =
+    window.speechSynthesis;
 
-  if (voices.length) {
-    cachedVoices = voices;
+  let voices =
+    synth.getVoices();
+
+  if (
+    voices.length === 0 &&
+    !voicesLoaded
+  ) {
+    voicesLoaded = true;
+
+    synth.onvoiceschanged =
+      () => {
+        synth.getVoices();
+      };
   }
 
-  return cachedVoices;
+  return voices;
 }
 
-function getBestVoice(
+function findBestVoice(
   voiceType:
     | "female"
     | "male"
@@ -58,100 +70,98 @@ function getBestVoice(
   }
 
   const indianVoices =
-    voices.filter((voice) => {
-      const lang =
-        voice.lang.toLowerCase();
+    voices.filter(
+      (voice) =>
+        voice.lang
+          .toLowerCase()
+          .includes(
+            "en-in"
+          ) ||
+        voice.lang
+          .toLowerCase()
+          .includes(
+            "hi-in"
+          )
+    );
 
-      return (
-        lang.includes("en-in") ||
-        lang.includes("hi-in")
-      );
-    });
-
-  const searchPool =
+  const preferredVoices =
     indianVoices.length
       ? indianVoices
       : voices;
 
+  const femalePriority =
+    [
+      "Microsoft Heera",
+      "Microsoft Swara",
+      "Google हिन्दी",
+      "Google UK English Female",
+      "Samantha"
+    ];
+
+  const malePriority =
+    [
+      "Microsoft Prabhat",
+      "Google UK English Male",
+      "Daniel",
+      "Alex"
+    ];
+
+  const professionalPriority =
+    [
+      "Microsoft Heera",
+      "Microsoft Prabhat",
+      "Google UK English Female",
+      "Google UK English Male"
+    ];
+
+  let priorities:
+    string[] = [];
+
   if (
     voiceType ===
-    "professional"
+    "female"
   ) {
-    return (
-      searchPool.find((v) =>
-        v.name
-          .toLowerCase()
-          .includes("google")
-      ) ||
-
-      searchPool.find((v) =>
-        v.name
-          .toLowerCase()
-          .includes("microsoft")
-      ) ||
-
-      searchPool[0]
-    );
+    priorities =
+      femalePriority;
+  } else if (
+    voiceType ===
+    "male"
+  ) {
+    priorities =
+      malePriority;
+  } else {
+    priorities =
+      professionalPriority;
   }
 
-  if (
-    voiceType === "male"
-  ) {
-    return (
-      searchPool.find((v) => {
-        const name =
-          v.name.toLowerCase();
-
-        return (
-          name.includes(
-            "male"
-          ) ||
-          name.includes(
-            "david"
-          ) ||
-          name.includes(
-            "mark"
-          ) ||
-          name.includes(
-            "rahul"
+  for (const name of priorities) {
+    const matched =
+      preferredVoices.find(
+        (voice) =>
+          voice.name.includes(
+            name
           )
-        );
-      }) ||
+      );
 
-      searchPool[
-        searchPool.length - 1
-      ]
-    );
+    if (matched) {
+      return matched;
+    }
   }
 
   return (
-    searchPool.find((v) => {
-      const name =
-        v.name.toLowerCase();
-
-      return (
-        name.includes(
-          "female"
-        ) ||
-        name.includes(
-          "zira"
-        ) ||
-        name.includes(
-          "priya"
-        )
-      );
-    }) ||
-
-    searchPool[0]
+    preferredVoices[0] ||
+    null
   );
 }
 
 export function speakText({
   text,
 
-  voiceType = "female",
+  voiceType =
+    "female",
 
-  language = "en-IN",
+  language =
+    "en-IN",
 
   rate,
 
@@ -186,18 +196,14 @@ export function speakText({
       return;
     }
 
-    if (!text.trim()) {
-      return;
-    }
+    const synth =
+      window.speechSynthesis;
+
+    synth.cancel();
 
     const utterance =
       new SpeechSynthesisUtterance(
         text
-      );
-
-    const selectedVoice =
-      getBestVoice(
-        voiceType
       );
 
     utterance.lang =
@@ -206,38 +212,40 @@ export function speakText({
     utterance.volume =
       volume;
 
-    /*
-      IMPORTANT:
-      Lower speed = less robotic
-    */
-
     if (
       voiceType ===
       "female"
     ) {
       utterance.rate =
-        rate ?? 0.58;
+        rate ?? 0.92;
 
       utterance.pitch =
-        pitch ?? 0.92;
+        pitch ?? 1;
     } else if (
       voiceType ===
       "male"
     ) {
       utterance.rate =
-        rate ?? 0.56;
+        rate ?? 0.88;
 
       utterance.pitch =
-        pitch ?? 0.72;
+        pitch ?? 0.92;
     } else {
       utterance.rate =
-        rate ?? 0.60;
+        rate ?? 0.9;
 
       utterance.pitch =
-        pitch ?? 0.82;
+        pitch ?? 0.96;
     }
 
-    if (selectedVoice) {
+    const selectedVoice =
+      findBestVoice(
+        voiceType
+      );
+
+    if (
+      selectedVoice
+    ) {
       utterance.voice =
         selectedVoice;
     }
@@ -259,16 +267,14 @@ export function speakText({
         );
       };
 
-    window.speechSynthesis.cancel();
-
     setTimeout(() => {
-      window.speechSynthesis.speak(
+      synth.speak(
         utterance
       );
-    }, 250);
+    }, 80);
   } catch (error) {
     console.error(
-      "Speech synthesis error:",
+      "Speech Synthesis Error:",
       error
     );
 
@@ -319,22 +325,13 @@ export function getAvailableVoices() {
     return [];
   }
 
-  return loadVoices().map(
-    (voice) => ({
-      name: voice.name,
-      lang: voice.lang
-    })
-  );
-}
+  return window.speechSynthesis
+    .getVoices()
+    .map((voice) => ({
+      name:
+        voice.name,
 
-if (
-  typeof window !==
-  "undefined"
-) {
-  window.speechSynthesis.onvoiceschanged =
-    () => {
-      loadVoices();
-    };
-
-  loadVoices();
+      lang:
+        voice.lang
+    }));
 }
