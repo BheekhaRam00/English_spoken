@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useState
 } from "react";
 
@@ -27,7 +28,16 @@ export default function PracticePage() {
       "female"
     );
 
-  const [engine] = useState(
+  /*
+  STABLE SINGLE ENGINE INSTANCE
+  Prevents:
+  - reconnect bugs
+  - duplicated AI replies
+  - state reset issues
+  - voice bugs
+  - rerender engine recreation
+  */
+  const engine = useMemo(
     () =>
       new AudioCallEngine({
         mode: "daily",
@@ -36,23 +46,47 @@ export default function PracticePage() {
           "female",
 
         autoSpeak: true
-      })
+      }),
+    []
   );
 
+  /*
+  Sync mode changes
+  */
   useEffect(() => {
     engine.setMode(mode);
+  }, [
+    engine,
+    mode
+  ]);
 
+  /*
+  Sync voice changes
+  */
+  useEffect(() => {
     engine.setVoiceType(
       voiceType
     );
   }, [
     engine,
-    mode,
     voiceType
   ]);
 
+  /*
+  Cleanup on page leave
+  Prevents:
+  - stuck microphone
+  - speech overlap
+  - memory leaks
+  */
+  useEffect(() => {
+    return () => {
+      engine.disconnect();
+    };
+  }, [engine]);
+
   return (
-    <main className="min-h-screen bg-[#0f172a]">
+    <main className="min-h-screen overflow-hidden bg-[#0f172a]">
       <PracticeScreen
         engine={engine}
         mode={mode}
