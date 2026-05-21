@@ -1,14 +1,8 @@
 import { callOpenRouter }
   from "@/server/ai/providers/openrouter";
 
-import { callDeepSeek }
-  from "@/server/ai/providers/deepseek";
-
 import { callMockProvider }
   from "@/server/ai/providers/mock";
-
-import { validateAIResponse }
-  from "@/server/ai/response-validator";
 
 import { cleanAIText }
   from "@/server/utils/text";
@@ -42,76 +36,35 @@ export async function requestAICompletion({
   apiKey
 }: RequestAICompletionParams) {
   try {
-    try {
-      const openRouterReply =
-        await callOpenRouter({
-          apiKey,
+    const openRouterReply =
+      await callOpenRouter({
+        apiKey,
 
-          message,
+        message,
 
-          history,
+        history,
 
-          mode
-        });
+        mode
+      });
 
-      const cleanedReply =
-        cleanAIText(
-          openRouterReply
-        );
+    const cleanedReply =
+      cleanAIText(
+        openRouterReply
+      )
+        .replace(/\n+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
-      if (
-        validateAIResponse(
-          cleanedReply
-        )
-      ) {
-        return cleanedReply;
-      }
-    } catch (error) {
-      logError(
-        "OpenRouter Provider Failed",
-        error
+    if (!cleanedReply) {
+      throw new Error(
+        "Empty AI response."
       );
     }
 
-    try {
-      const deepSeekReply =
-        await callDeepSeek({
-          apiKey,
-
-          message,
-
-          history,
-
-          mode
-        });
-
-      const cleanedReply =
-        cleanAIText(
-          deepSeekReply
-        );
-
-      if (
-        validateAIResponse(
-          cleanedReply
-        )
-      ) {
-        return cleanedReply;
-      }
-    } catch (error) {
-      logError(
-        "DeepSeek Provider Failed",
-        error
-      );
-    }
-
-    return callMockProvider({
-      message,
-
-      mode
-    });
+    return cleanedReply;
   } catch (error) {
     logError(
-      "Provider Manager Fatal Error",
+      "OpenRouter Provider Failed",
       error
     );
 
