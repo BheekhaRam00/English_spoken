@@ -4,8 +4,6 @@ import { env } from "@/server/env";
 
 import { trimConversation } from "@/server/ai/context-manager";
 
-import { validateAIResponse } from "@/server/ai/response-validator";
-
 import { getOfflineReply } from "@/server/ai/offline-replies";
 
 import { requestAICompletion } from "@/server/ai/provider-manager";
@@ -26,6 +24,7 @@ type ChatRequestBody = {
 
   history?: {
     role: "user" | "ai";
+
     text: string;
   }[];
 
@@ -83,13 +82,27 @@ export async function POST(
 
     const cleanedMessage =
       cleanAIText(
-        body.message
+        body.message || ""
+      ).trim();
+
+    if (!cleanedMessage) {
+      return NextResponse.json(
+        {
+          success: false,
+
+          message:
+            "Message cannot be empty."
+        },
+        {
+          status: 400
+        }
       );
+    }
 
     const history =
       trimConversation(
         body.history || [],
-        14
+        12
       );
 
     logInfo(
@@ -99,6 +112,11 @@ export async function POST(
     if (
       !env.OPENROUTER_API_KEY
     ) {
+      logError(
+        "Missing OPENROUTER_API_KEY",
+        "Environment variable not found."
+      );
+
       return NextResponse.json({
         success: true,
 
@@ -117,52 +135,73 @@ export async function POST(
       });
     }
 
-    const aiReply =
-      await requestAICompletion(
-        {
-          message:
-            cleanedMessage,
+    let aiReply = "";
 
-          history,
+    try {
+      aiReply =
+        await requestAICompletion(
+          {
+            message:
+              cleanedMessage,
 
-          mode:
-            body.mode ||
-            "daily",
+            history,
 
-          apiKey:
-            env.OPENROUTER_API_KEY
-        }
+            mode:
+              body.mode ||
+              "daily",
+
+            apiKey:
+              env.OPENROUTER_API_KEY
+          }
+        );
+    } catch (aiError) {
+      logError(
+        "AI Completion Error",
+        aiError
       );
-
-    const cleanedReply =
-      cleanAIText(
-        aiReply
-      );
-
-    const validReply =
-      validateAIResponse(
-        cleanedReply
-      );
-
-    if (!validReply) {
-      const fallbackReply =
-        getOfflineReply({
-          message:
-            cleanedMessage,
-
-          mode:
-            body.mode ||
-            "daily"
-        });
 
       return NextResponse.json({
         success: true,
 
         reply:
-          fallbackReply,
+          getOfflineReply({
+            message:
+              cleanedMessage,
+
+            mode:
+              body.mode ||
+              "daily"
+          }),
 
         source:
           "fallback"
+      });
+    }
+
+    const cleanedReply =
+      cleanAIText(
+        aiReply
+      )
+        .replace(/\n+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (!cleanedReply) {
+      return NextResponse.json({
+        success: true,
+
+        reply:
+          getOfflineReply({
+            message:
+              cleanedMessage,
+
+            mode:
+              body.mode ||
+              "daily"
+          }),
+
+        source:
+          "empty-fallback"
       });
     }
 
@@ -185,13 +224,7 @@ export async function POST(
         success: true,
 
         reply:
-          getOfflineReply({
-            message:
-              "general",
-
-            mode:
-              "daily"
-          }),
+          "Sorry, I had a temporary issue. Please say that again.",
 
         source:
           "emergency-fallback"
