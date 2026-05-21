@@ -32,7 +32,7 @@ export default function PracticePage() {
       new AudioCallEngine({
         apiKey:
           process.env
-            .NEXT_PUBLIC_GEMINI_API_KEY || "",
+            .NEXT_PUBLIC_OPENROUTER_API_KEY || "",
 
         mode: "daily",
 
