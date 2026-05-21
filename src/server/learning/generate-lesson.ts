@@ -1,23 +1,19 @@
-import { requestAICompletion }
-  from "@/server/ai/provider-manager";
-
 import { cleanAIText }
   from "@/server/utils/text";
 
 import { logError }
   from "@/server/utils/logger";
 
-type GenerateLessonParams =
-  {
-    mode:
-      | "beginner"
-      | "daily"
-      | "office"
-      | "business"
-      | "interview"
-      | "pronunciation"
-      | "advanced";
-  };
+type GenerateLessonParams = {
+  mode:
+    | "beginner"
+    | "daily"
+    | "office"
+    | "business"
+    | "interview"
+    | "pronunciation"
+    | "advanced";
+};
 
 type LessonResponse = {
   title: string;
@@ -28,56 +24,43 @@ type LessonResponse = {
 
   vocabulary: {
     word: string;
-
     meaning: string;
-
     pronunciation: string;
-  }[];
-
-  phrases: {
-    phrase: string;
-
-    meaning: string;
   }[];
 
   pronunciationTip: string;
 };
 
+const OPENROUTER_URL =
+  "https://openrouter.ai/api/v1/chat/completions";
+
+/*
+WORKING FAST MODELS
+*/
+const MODELS = [
+  "google/gemma-2-9b-it:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+  "qwen/qwen3-32b:free"
+];
+
 function buildLessonPrompt(
   mode: string
 ) {
   return `
-Generate ONE SHORT spoken English lesson for Indian learners.
+Generate a SHORT spoken English lesson.
 
-MODE:
-${mode}
+Mode: ${mode}
 
-VERY IMPORTANT RULES:
-- Keep lesson SHORT
-- Maximum 2 or 3 short sentences
-- NO long paragraphs
-- NO storytelling
-- NO essays
-- NO large conversations
-- Mobile friendly format
-- Beginner friendly spoken English
-- Practical daily usage
-- Natural English only
+RULES:
+- Only 4 to 6 short sentences.
+- Very easy English.
+- One sentence per line.
+- Daily spoken style.
+- No paragraph.
+- No long explanation.
 
-GOOD EXAMPLE:
-English:
-"Can I get a glass of water?"
-"Sure, I will bring it."
+Return ONLY valid JSON.
 
-Hindi:
-"क्या मुझे एक गिलास पानी मिल सकता है?"
-"ज़रूर, मैं लेकर आता हूँ।"
-
-Vocabulary should contain ONLY 3 words.
-
-Return STRICT JSON ONLY.
-
-JSON FORMAT:
 {
   "title": "",
   "english": "",
@@ -89,15 +72,62 @@ JSON FORMAT:
       "pronunciation": ""
     }
   ],
-  "phrases": [
-    {
-      "phrase": "",
-      "meaning": ""
-    }
-  ],
   "pronunciationTip": ""
 }
 `;
+}
+
+async function requestLesson(
+  apiKey: string,
+  model: string,
+  prompt: string
+) {
+  const response =
+    await fetch(
+      OPENROUTER_URL,
+      {
+        method: "POST",
+
+        headers: {
+          Authorization:
+            `Bearer ${apiKey}`,
+
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+          model,
+
+          temperature: 0.5,
+
+          max_tokens: 300,
+
+          messages: [
+            {
+              role: "user",
+
+              content:
+                prompt
+            }
+          ]
+        })
+      }
+    );
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error
+        ?.message ||
+        "Model failed"
+    );
+  }
+
+  return data?.choices?.[0]
+    ?.message?.content;
 }
 
 function parseLesson(
@@ -105,7 +135,7 @@ function parseLesson(
 ): LessonResponse | null {
   try {
     const cleaned =
-      text
+      cleanAIText(text)
         .replace(
           /```json/g,
           ""
@@ -116,8 +146,27 @@ function parseLesson(
         )
         .trim();
 
+    const jsonStart =
+      cleaned.indexOf("{");
+
+    const jsonEnd =
+      cleaned.lastIndexOf("}");
+
+    if (
+      jsonStart === -1 ||
+      jsonEnd === -1
+    ) {
+      return null;
+    }
+
+    const jsonString =
+      cleaned.slice(
+        jsonStart,
+        jsonEnd + 1
+      );
+
     return JSON.parse(
-      cleaned
+      jsonString
     );
   } catch (error) {
     logError(
@@ -132,55 +181,78 @@ function parseLesson(
 function generateFallbackLesson(
   mode: string
 ): LessonResponse {
+  const lessons = {
+    daily: {
+      title:
+        "Daily English Practice",
+
+      english:
+        "Hello.\nHow are you?\nI am fine.\nWhat are you doing today?\nI am going to work.",
+
+      hindi:
+        "हेलो।\nआप कैसे हैं?\nमैं ठीक हूँ।\nआप आज क्या कर रहे हैं?\nमैं काम पर जा रहा हूँ।"
+    },
+
+    business: {
+      title:
+        "Business Meeting",
+
+      english:
+        "Good morning.\nThe meeting starts at 10 AM.\nPlease send the report.\nI will check the email.\nThank you.",
+
+      hindi:
+        "सुप्रभात।\nमीटिंग 10 बजे शुरू होती है।\nकृपया रिपोर्ट भेजें।\nमैं ईमेल चेक करूंगा।\nधन्यवाद।"
+    },
+
+    interview: {
+      title:
+        "Interview Practice",
+
+      english:
+        "Tell me about yourself.\nI am a hardworking person.\nI like learning new skills.\nI can work in a team.\nThank you.",
+
+      hindi:
+        "अपने बारे में बताइए।\nमैं मेहनती व्यक्ति हूँ।\nमुझे नई चीजें सीखना पसंद है।\nमैं टीम में काम कर सकता हूँ।\nधन्यवाद।"
+    }
+  };
+
+  const selected =
+    lessons[
+      mode as keyof typeof lessons
+    ] ||
+    lessons.daily;
+
   return {
     title:
-      `${mode} English Practice`,
+      selected.title,
 
     english:
-      "How are you today?\nI am doing well.",
+      selected.english,
 
     hindi:
-      "आज आप कैसे हैं?\nमैं अच्छा हूँ।",
+      selected.hindi,
 
     vocabulary: [
       {
-        word: "Today",
+        word:
+          "Hello",
 
         meaning:
-          "आज",
+          "नमस्ते",
 
         pronunciation:
-          "टुडे"
+          "हैलो"
       },
 
       {
-        word: "Well",
+        word:
+          "Work",
 
         meaning:
-          "अच्छा",
+          "काम",
 
         pronunciation:
-          "वेल"
-      },
-
-      {
-        word: "Doing",
-
-        meaning:
-          "कर रहा",
-
-        pronunciation:
-          "डूइंग"
-      }
-    ],
-
-    phrases: [
-      {
-        phrase:
-          "How are you?",
-
-        meaning:
-          "आप कैसे हैं?"
+          "वर्क"
       }
     ],
 
@@ -203,60 +275,43 @@ export async function generateLesson({
       );
     }
 
-    const aiReply =
-      await requestAICompletion({
-        apiKey,
-
-        message:
-          buildLessonPrompt(
-            mode
-          ),
-
-        history: [],
-
-        mode:
-          "daily"
-      });
-
-    const cleanedReply =
-      cleanAIText(
-        aiReply
-      );
-
-    const parsedLesson =
-      parseLesson(
-        cleanedReply
-      );
-
-    if (!parsedLesson) {
-      return generateFallbackLesson(
+    const prompt =
+      buildLessonPrompt(
         mode
       );
+
+    for (const model of MODELS) {
+      try {
+        const reply =
+          await requestLesson(
+            apiKey,
+            model,
+            prompt
+          );
+
+        if (!reply) {
+          continue;
+        }
+
+        const parsed =
+          parseLesson(
+            reply
+          );
+
+        if (parsed) {
+          return parsed;
+        }
+      } catch (error) {
+        logError(
+          `Model Failed: ${model}`,
+          error
+        );
+      }
     }
 
-    parsedLesson.english =
-      parsedLesson.english
-        ?.trim()
-        ?.slice(0, 220);
-
-    parsedLesson.hindi =
-      parsedLesson.hindi
-        ?.trim()
-        ?.slice(0, 220);
-
-    parsedLesson.vocabulary =
-      (
-        parsedLesson.vocabulary ||
-        []
-      ).slice(0, 3);
-
-    parsedLesson.phrases =
-      (
-        parsedLesson.phrases ||
-        []
-      ).slice(0, 2);
-
-    return parsedLesson;
+    return generateFallbackLesson(
+      mode
+    );
   } catch (error) {
     logError(
       "Generate Lesson Error",
