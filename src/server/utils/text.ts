@@ -1,8 +1,8 @@
 const MULTIPLE_SPACES =
   /[ \t]+/g;
 
-const MULTIPLE_EMPTY_LINES =
-  /\n{3,}/g;
+const HUGE_EMPTY_LINES =
+  /\n{4,}/g;
 
 const MARKDOWN_SYMBOLS =
   /[*#`>]/g;
@@ -24,7 +24,7 @@ export function cleanAIText(
     )
 
     /*
-    NORMALIZE WINDOWS LINES
+    WINDOWS LINE FIX
     */
     .replace(
       /\r/g,
@@ -32,7 +32,7 @@ export function cleanAIText(
     )
 
     /*
-    KEEP NEWLINES SAFE
+    CLEAN EACH LINE
     */
     .split("\n")
     .map((line) =>
@@ -43,19 +43,26 @@ export function cleanAIText(
         )
         .trim()
     )
-    .filter(Boolean)
+
+    /*
+    KEEP NATURAL LINE BREAKS
+    IMPORTANT FOR:
+    - speech rhythm
+    - lessons
+    - conversation formatting
+    */
     .join("\n")
 
     /*
-    CLEAN HUGE GAPS
+    REMOVE MASSIVE GAPS ONLY
     */
     .replace(
-      MULTIPLE_EMPTY_LINES,
-      "\n\n"
+      HUGE_EMPTY_LINES,
+      "\n\n\n"
     )
 
     /*
-    REMOVE WEIRD QUOTES
+    NORMALIZE QUOTES
     */
     .replace(
       /[""]/g,
@@ -106,8 +113,8 @@ export function removeExtraLines(
 ) {
   return text
     .replace(
-      /\n{2,}/g,
-      "\n"
+      /\n{3,}/g,
+      "\n\n"
     )
     .trim();
 }
@@ -152,6 +159,9 @@ export function compactLines(
     .map((line) =>
       line.trim()
     )
-    .filter(Boolean)
+    .filter(
+      (line) =>
+        line.length > 0
+    )
     .join("\n");
 }
