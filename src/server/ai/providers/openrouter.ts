@@ -14,7 +14,6 @@ type OpenRouterParams = {
 
   history: {
     role: "user" | "ai";
-
     text: string;
   }[];
 
@@ -25,27 +24,29 @@ type OpenRouterParams = {
     | "advanced";
 };
 
-type OpenRouterResponse =
-  {
-    choices?: {
-      message?: {
-        content?: string;
-      };
-    }[];
-
-    error?: {
-      message?: string;
+type OpenRouterResponse = {
+  choices?: {
+    message?: {
+      content?: string;
     };
+  }[];
+
+  error?: {
+    message?: string;
   };
+};
 
 const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
+/*
+FAST + STABLE MODELS
+*/
 const PRIMARY_MODEL =
-  "openai/gpt-oss-20b:free";
+  "mistralai/mistral-7b-instruct:free";
 
 const FALLBACK_MODEL =
-  "moonshotai/kimi-dev-72b:free";
+  "openchat/openchat-7b:free";
 
 async function makeRequest({
   apiKey,
@@ -55,42 +56,45 @@ async function makeRequest({
   history
 }: {
   apiKey: string;
-
   model: string;
-
   systemPrompt: string;
-
   message: string;
-
   history: {
     role: "user" | "ai";
-
     text: string;
   }[];
 }) {
   const messages = [
     {
       role: "system",
+      content: `
+${systemPrompt}
 
-      content:
-        systemPrompt
+VERY IMPORTANT RULES:
+- Keep replies SHORT.
+- Maximum 3 short sentences.
+- Use simple spoken English.
+- Do NOT generate paragraphs.
+- Do NOT generate stories.
+- Keep dialogue format clean.
+- One sentence per line.
+- Sound natural and human.
+`
     },
 
-    ...history
-      .slice(-12)
-      .map((item) => ({
+    ...history.slice(-6).map(
+      (item) => ({
         role:
           item.role === "ai"
             ? "assistant"
             : "user",
 
-        content:
-          item.text
-      })),
+        content: item.text
+      })
+    ),
 
     {
       role: "user",
-
       content: message
     }
   ];
@@ -101,16 +105,11 @@ async function makeRequest({
       method: "POST",
 
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization:
+          `Bearer ${apiKey}`,
 
         "Content-Type":
-          "application/json",
-
-        "HTTP-Referer":
-          "https://fluentpro-ai.vercel.app",
-
-        "X-Title":
-          "FluentPro AI"
+          "application/json"
       },
 
       body: JSON.stringify({
@@ -118,15 +117,11 @@ async function makeRequest({
 
         messages,
 
-        temperature: 0.45,
+        temperature: 0.4,
 
-        top_p: 0.9,
+        max_tokens: 80,
 
-        frequency_penalty: 0.3,
-
-        presence_penalty: 0.2,
-
-        max_tokens: 120
+        top_p: 0.9
       })
     }
   );
@@ -136,9 +131,8 @@ async function makeRequest({
 
   if (!response.ok) {
     throw new Error(
-      data?.error
-        ?.message ||
-        `Model failed: ${model}`
+      data?.error?.message ||
+      `Model failed: ${model}`
     );
   }
 
@@ -146,20 +140,15 @@ async function makeRequest({
     data?.choices?.[0]
       ?.message?.content;
 
-  if (
-    !aiReply ||
-    !aiReply.trim()
-  ) {
+  if (!aiReply) {
     throw new Error(
-      `Empty response from ${model}`
+      "Empty AI response"
     );
   }
 
   return cleanAIText(
     aiReply
-  )
-    .replace(/\n+/g, " ")
-    .trim();
+  ).trim();
 }
 
 export async function callOpenRouter({
@@ -169,17 +158,6 @@ export async function callOpenRouter({
   mode
 }: OpenRouterParams) {
   try {
-    const cleanedMessage =
-      cleanAIText(
-        message
-      ).trim();
-
-    if (!cleanedMessage) {
-      throw new Error(
-        "Message is empty."
-      );
-    }
-
     const systemPrompt =
       buildSystemPrompt(
         mode
@@ -188,42 +166,30 @@ export async function callOpenRouter({
     try {
       return await makeRequest({
         apiKey,
-
         model:
           PRIMARY_MODEL,
-
         systemPrompt,
-
-        message:
-          cleanedMessage,
-
+        message,
         history
       });
-    } catch (
-      primaryError
-    ) {
+    } catch (primaryError) {
       logError(
-        "Primary OpenRouter Model Failed",
+        "Primary model failed",
         primaryError
       );
 
       return await makeRequest({
         apiKey,
-
         model:
           FALLBACK_MODEL,
-
         systemPrompt,
-
-        message:
-          cleanedMessage,
-
+        message,
         history
       });
     }
   } catch (error) {
     logError(
-      "OpenRouter Provider Error",
+      "OpenRouter Error",
       error
     );
 
