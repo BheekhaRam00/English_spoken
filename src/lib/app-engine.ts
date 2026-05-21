@@ -29,9 +29,8 @@ import {
   OfflineEngine
 } from "./offline-engine";
 
-export type AppEngineConfig = {
-  apiKey?: string;
-};
+export type AppEngineConfig =
+  Record<string, never>;
 
 export class AppEngine {
   private learningEngine:
@@ -52,9 +51,7 @@ export class AppEngine {
   private offlineEngine:
     OfflineEngine;
 
-  constructor({
-    apiKey = ""
-  }: AppEngineConfig = {}) {
+  constructor() {
     this.settingsEngine =
       new SettingsEngine();
 
@@ -68,8 +65,6 @@ export class AppEngine {
 
     this.conversationEngine =
       new ConversationEngine({
-        apiKey,
-
         mode:
           settings.learningMode as AIConversationMode,
 
@@ -359,4 +354,4 @@ export class AppEngine {
       messages.length - 1
     ];
   }
-  }
+}
