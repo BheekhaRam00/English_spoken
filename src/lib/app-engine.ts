@@ -59,9 +59,10 @@ export class AppEngine {
       this.settingsEngine.getSettings();
 
     this.learningEngine =
-      new LearningEngine(
-        settings.learningMode
-      );
+  new LearningEngine(
+    settings.learningMode,
+    apiKey
+  );
 
     this.conversationEngine =
       new ConversationEngine({
