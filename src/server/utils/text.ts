@@ -1,8 +1,11 @@
 const MULTIPLE_SPACES =
-  /\s+/g;
+  /[ \t]+/g;
+
+const MULTIPLE_LINES =
+  /\n{3,}/g;
 
 const MARKDOWN_SYMBOLS =
-  /[*#`>_-]/g;
+  /[*#`>]/g;
 
 export function cleanAIText(
   text: string
@@ -17,8 +20,16 @@ export function cleanAIText(
       ""
     )
     .replace(
+      /\r/g,
+      ""
+    )
+    .replace(
       MULTIPLE_SPACES,
       " "
+    )
+    .replace(
+      MULTIPLE_LINES,
+      "\n\n"
     )
     .trim();
 }
@@ -57,7 +68,7 @@ export function removeExtraLines(
 ) {
   return text
     .replace(
-      /\n+/g,
+      /\n{2,}/g,
       "\n"
     )
     .trim();
