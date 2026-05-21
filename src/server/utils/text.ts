@@ -1,7 +1,7 @@
 const MULTIPLE_SPACES =
   /[ \t]+/g;
 
-const MULTIPLE_LINES =
+const MULTIPLE_EMPTY_LINES =
   /\n{3,}/g;
 
 const MARKDOWN_SYMBOLS =
@@ -15,22 +15,60 @@ export function cleanAIText(
   }
 
   return text
+    /*
+    REMOVE MARKDOWN
+    */
     .replace(
       MARKDOWN_SYMBOLS,
       ""
     )
+
+    /*
+    NORMALIZE WINDOWS LINES
+    */
     .replace(
       /\r/g,
       ""
     )
-    .replace(
-      MULTIPLE_SPACES,
-      " "
+
+    /*
+    KEEP NEWLINES SAFE
+    */
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(
+          MULTIPLE_SPACES,
+          " "
+        )
+        .trim()
     )
+    .filter(Boolean)
+    .join("\n")
+
+    /*
+    CLEAN HUGE GAPS
+    */
     .replace(
-      MULTIPLE_LINES,
+      MULTIPLE_EMPTY_LINES,
       "\n\n"
     )
+
+    /*
+    REMOVE WEIRD QUOTES
+    */
+    .replace(
+      /[""]/g,
+      '"'
+    )
+    .replace(
+      /['']/g,
+      "'"
+    )
+
+    /*
+    FINAL CLEAN
+    */
     .trim();
 }
 
@@ -102,4 +140,18 @@ export function sentenceCount(
         sentence.trim()
           .length > 0
     ).length;
+}
+
+export function compactLines(
+  text: string
+) {
+  return cleanAIText(
+    text
+  )
+    .split("\n")
+    .map((line) =>
+      line.trim()
+    )
+    .filter(Boolean)
+    .join("\n");
 }
