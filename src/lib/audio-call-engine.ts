@@ -20,17 +20,6 @@ import {
   startConversation
 } from "@/services/ai/conversation";
 
-export type AudioCallEngineConfig =
-  {
-    apiKey?: string;
-
-    mode?: AIConversationMode;
-
-    voiceType?: VoiceType;
-
-    autoSpeak?: boolean;
-  };
-
 type TranscriptCallback = (
   transcript: string
 ) => void;
@@ -43,9 +32,16 @@ type ErrorCallback = (
   error: string
 ) => void;
 
-export class AudioCallEngine {
-  private apiKey: string;
+export type AudioCallEngineConfig =
+  {
+    mode?: AIConversationMode;
 
+    voiceType?: VoiceType;
+
+    autoSpeak?: boolean;
+  };
+
+export class AudioCallEngine {
   private mode: AIConversationMode;
 
   private voiceType: VoiceType;
@@ -59,25 +55,25 @@ export class AudioCallEngine {
   private messages: ConversationMessage[];
 
   constructor({
-    apiKey = "",
-
     mode = "daily",
 
     voiceType = "female",
 
     autoSpeak = true
   }: AudioCallEngineConfig = {}) {
-    this.apiKey = apiKey;
-
     this.mode = mode;
 
-    this.voiceType = voiceType;
+    this.voiceType =
+      voiceType;
 
-    this.autoSpeak = autoSpeak;
+    this.autoSpeak =
+      autoSpeak;
 
-    this.connected = false;
+    this.connected =
+      false;
 
-    this.listening = false;
+    this.listening =
+      false;
 
     this.messages = [];
   }
@@ -117,7 +113,9 @@ export class AudioCallEngine {
       });
     }
 
-    onMessage?.(aiMessage);
+    onMessage?.(
+      aiMessage
+    );
 
     return aiMessage;
   }
@@ -127,9 +125,11 @@ export class AudioCallEngine {
 
     stopSpeechRecognition();
 
-    this.connected = false;
+    this.connected =
+      false;
 
-    this.listening = false;
+    this.listening =
+      false;
   }
 
   isConnected() {
@@ -171,42 +171,43 @@ export class AudioCallEngine {
       userMessage
     );
 
-    onMessage?.(userMessage);
+    onMessage?.(
+      userMessage
+    );
 
     let aiReply =
       generateFallbackReply(
-        cleaned
+        cleaned,
+        this.mode
       );
 
     try {
-      if (this.apiKey) {
-        aiReply =
-          await continueConversation(
-            {
-              userMessage:
-                cleaned,
+      aiReply =
+        await continueConversation(
+          {
+            userMessage:
+              cleaned,
 
-              apiKey:
-                this.apiKey,
+            history:
+              this.messages.map(
+                (
+                  message
+                ) => ({
+                  role:
+                    message.role,
 
-              history:
-                this.messages.map(
-                  (message) => ({
-                    role:
-                      message.role,
+                  text:
+                    message.text
+                })
+              ),
 
-                    text:
-                      message.text
-                  })
-                ),
-
-              mode: this.mode
-            }
-          );
-      }
+            mode:
+              this.mode
+          }
+        );
     } catch (error) {
       console.error(
-        "Audio call AI error:",
+        "Audio Call AI Error:",
         error
       );
     }
@@ -237,7 +238,9 @@ export class AudioCallEngine {
       });
     }
 
-    onMessage?.(aiMessage);
+    onMessage?.(
+      aiMessage
+    );
 
     return aiMessage;
   }
@@ -266,7 +269,7 @@ export class AudioCallEngine {
         onError?.(
           error instanceof Error
             ? error.message
-            : "Audio call error"
+            : "Voice recognition error"
         );
       },
 
@@ -297,7 +300,8 @@ export class AudioCallEngine {
         .reverse()
         .find(
           (message) =>
-            message.role === "ai"
+            message.role ===
+            "ai"
         );
 
     if (!lastAI) {
@@ -305,7 +309,8 @@ export class AudioCallEngine {
     }
 
     speakText({
-      text: lastAI.text,
+      text:
+        lastAI.text,
 
       voiceType:
         this.voiceType
@@ -320,7 +325,8 @@ export class AudioCallEngine {
     return this.messages
       .map((message) => {
         const role =
-          message.role === "ai"
+          message.role ===
+          "ai"
             ? "AI"
             : "You";
 
