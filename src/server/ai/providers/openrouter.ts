@@ -38,6 +38,7 @@ type OpenRouterResponse = {
 
   error?: {
     message?: string;
+    code?: number;
   };
 };
 
@@ -45,15 +46,30 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 /*
-WORKING STABLE FREE MODELS
+ONLY RELATIVELY STABLE MODELS
+DO NOT KEEP ROTATING MODELS
 */
 const MODELS = [
   "deepseek/deepseek-chat-v3-0324:free",
 
-  "meta-llama/llama-3.3-8b-instruct:free",
-
-  "microsoft/phi-3-mini-128k-instruct:free"
+  "meta-llama/llama-3.1-8b-instruct:free"
 ];
+
+function normalizeAIReply(
+  text: string
+) {
+  return text
+    .replace(/\r/g, "")
+    .replace(
+      /\n{3,}/g,
+      "\n\n"
+    )
+    .replace(
+      /[ \t]{2,}/g,
+      " "
+    )
+    .trim();
+}
 
 async function makeRequest({
   apiKey,
@@ -93,19 +109,19 @@ async function makeRequest({
 ${systemPrompt}
 
 IMPORTANT RULES:
-- Reply naturally.
-- Use spoken English.
+- Speak naturally like a real human.
+- Use conversational spoken English.
 - Maximum 3 short sentences.
-- No paragraph.
-- No markdown.
-- One sentence per line.
-- Keep conversation engaging.
+- Keep replies engaging.
+- Avoid robotic wording.
+- Avoid repeating the same structure.
 - Ask small follow-up questions sometimes.
+- No markdown.
 `
       },
 
       ...history
-        .slice(-8)
+        .slice(-6)
         .map((item) => ({
           role:
             item.role === "ai"
@@ -119,7 +135,10 @@ IMPORTANT RULES:
       {
         role: "user",
 
-        content: message
+        content:
+          cleanAIText(
+            message
+          )
       }
     ];
 
@@ -151,15 +170,15 @@ IMPORTANT RULES:
 
             messages,
 
-            temperature: 0.7,
+            temperature: 0.85,
 
-            top_p: 0.9,
+            top_p: 0.92,
 
-            frequency_penalty: 0.2,
+            frequency_penalty: 0.35,
 
-            presence_penalty: 0.2,
+            presence_penalty: 0.3,
 
-            max_tokens: 120
+            max_tokens: 140
           })
         }
       );
@@ -182,7 +201,8 @@ IMPORTANT RULES:
 
     if (
       !aiReply ||
-      !aiReply.trim()
+      typeof aiReply !==
+        "string"
     ) {
       throw new Error(
         `Empty response from ${model}`
@@ -193,9 +213,14 @@ IMPORTANT RULES:
       `OpenRouter success: ${model}`
     );
 
-    return cleanAIText(
+    /*
+    IMPORTANT:
+    DO NOT OVER-CLEAN AI TEXT
+    OTHERWISE NATURAL SPEECH BREAKS
+    */
+    return normalizeAIReply(
       aiReply
-    ).trim();
+    );
   } finally {
     clearTimeout(timeout);
   }
@@ -217,17 +242,25 @@ export async function callOpenRouter({
 
   for (const model of MODELS) {
     try {
-      return await makeRequest({
-        apiKey,
+      const response =
+        await makeRequest({
+          apiKey,
 
-        model,
+          model,
 
-        systemPrompt,
+          systemPrompt,
 
-        message,
+          message,
 
-        history
-      });
+          history
+        });
+
+      if (
+        response &&
+        response.trim()
+      ) {
+        return response;
+      }
     } catch (error) {
       lastError = error;
 
