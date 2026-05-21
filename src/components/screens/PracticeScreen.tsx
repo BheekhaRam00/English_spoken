@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState
 } from "react";
@@ -101,33 +102,82 @@ export default function PracticeScreen({
     setError
   ] = useState("");
 
-  const messagesEndRef =
+  const messagesContainerRef =
     useRef<HTMLDivElement | null>(
       null
     );
 
+  const inputRef =
+    useRef<HTMLInputElement | null>(
+      null
+    );
+
+  /*
+  SAFE AUTO SCROLL
+  */
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView(
-      {
-        behavior: "smooth"
+    if (
+      messagesContainerRef.current
+    ) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current
+          .scrollHeight;
+    }
+  }, [messages, loading]);
+
+  /*
+  PREVENT DUPLICATE MESSAGE INSERT
+  */
+  function appendMessage(
+    message: ConversationMessage
+  ) {
+    setMessages(
+      (previous) => {
+        const alreadyExists =
+          previous.some(
+            (
+              item
+            ) =>
+              item.id ===
+              message.id
+          );
+
+        if (
+          alreadyExists
+        ) {
+          return previous;
+        }
+
+        return [
+          ...previous,
+          message
+        ];
       }
     );
-  }, [messages]);
+  }
 
+  /*
+  START CONVERSATION
+  */
   async function handleStartConversation() {
     try {
+      if (
+        connected
+      ) {
+        return;
+      }
+
       setError("");
+
+      setMessages([]);
 
       const aiMessage =
         await engine.connect(
-          (message) => {
-            setMessages(
-              (
-                previous
-              ) => [
-                ...previous,
-                message
-              ]
+          (
+            message
+          ) => {
+            appendMessage(
+              message
             );
           }
         );
@@ -137,6 +187,10 @@ export default function PracticeScreen({
       ]);
 
       setConnected(true);
+
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 250);
     } catch (error) {
       console.error(
         "Conversation Start Error:",
@@ -149,18 +203,38 @@ export default function PracticeScreen({
     }
   }
 
+  /*
+  END CONVERSATION
+  */
   function handleEndConversation() {
-    engine.disconnect();
+    try {
+      engine.disconnect();
 
-    setConnected(false);
+      setConnected(false);
 
-    setListening(false);
+      setListening(false);
+
+      setLoading(false);
+    } catch (error) {
+      console.error(
+        "Conversation End Error:",
+        error
+      );
+    }
   }
 
+  /*
+  SEND MESSAGE
+  */
   async function handleSendMessage() {
     try {
+      const cleanedInput =
+        input.trim();
+
       if (
-        !input.trim()
+        !cleanedInput ||
+        loading ||
+        !connected
       ) {
         return;
       }
@@ -169,21 +243,15 @@ export default function PracticeScreen({
 
       setLoading(true);
 
-      const currentInput =
-        input.trim();
-
       setInput("");
 
       await engine.sendTextMessage(
-        currentInput,
-        (message) => {
-          setMessages(
-            (
-              previous
-            ) => [
-              ...previous,
-              message
-            ]
+        cleanedInput,
+        (
+          message
+        ) => {
+          appendMessage(
+            message
           );
         }
       );
@@ -201,26 +269,37 @@ export default function PracticeScreen({
     }
   }
 
+  /*
+  START MIC
+  */
   function handleStartListening() {
     try {
+      if (
+        listening ||
+        !connected
+      ) {
+        return;
+      }
+
       setError("");
 
       setListening(true);
 
       engine.startVoiceListening(
         undefined,
-        (message) => {
-          setMessages(
-            (
-              previous
-            ) => [
-              ...previous,
-              message
-            ]
+        (
+          message
+        ) => {
+          appendMessage(
+            message
           );
         },
-        (errorMessage) => {
-          setListening(false);
+        (
+          errorMessage
+        ) => {
+          setListening(
+            false
+          );
 
           setError(
             errorMessage
@@ -241,38 +320,87 @@ export default function PracticeScreen({
     }
   }
 
+  /*
+  STOP MIC
+  */
   function handleStopListening() {
-    engine.stopVoiceListening();
+    try {
+      engine.stopVoiceListening();
 
-    setListening(false);
+      setListening(false);
+    } catch (error) {
+      console.error(
+        "Stop Listening Error:",
+        error
+      );
+    }
   }
 
+  /*
+  RESET CHAT
+  */
   function handleResetConversation() {
-    engine.clearConversation();
+    try {
+      engine.clearConversation();
 
-    setMessages([]);
+      setMessages([]);
 
-    setError("");
+      setError("");
+
+      setLoading(false);
+
+      setListening(false);
+    } catch (error) {
+      console.error(
+        "Reset Conversation Error:",
+        error
+      );
+    }
   }
 
+  /*
+  REPLAY
+  */
   function handleReplay() {
-    engine.replayLastAIMessage();
+    try {
+      engine.replayLastAIMessage();
+    } catch (error) {
+      console.error(
+        "Replay Error:",
+        error
+      );
+    }
   }
+
+  /*
+  EMPTY STATE
+  */
+  const showEmptyState =
+    useMemo(() => {
+      return (
+        connected &&
+        messages.length === 0
+      );
+    }, [
+      connected,
+      messages
+    ]);
 
   return (
-    <main className="min-h-screen bg-[#0f172a] text-white">
-      <div className="mx-auto w-full max-w-3xl px-3 py-4">
+    <main className="min-h-screen overflow-hidden bg-[#0f172a] text-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-3 py-4">
+        {/* HEADER */}
         <section className="mb-4 flex items-center gap-3">
           <Link href="/">
-            <button className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+            <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 transition hover:bg-white/10 active:scale-95">
               <ArrowLeft
                 size={18}
               />
             </button>
           </Link>
 
-          <div>
-            <h1 className="text-2xl font-bold">
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-bold">
               AI Practice
             </h1>
 
@@ -282,7 +410,8 @@ export default function PracticeScreen({
           </div>
         </section>
 
-        <section className="mb-3 flex gap-2 overflow-x-auto pb-1">
+        {/* MODE SELECT */}
+        <section className="mb-3 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {MODES.map(
             (
               practiceMode
@@ -296,11 +425,11 @@ export default function PracticeScreen({
                     practiceMode
                   )
                 }
-                className={`rounded-2xl px-4 py-2 text-xs font-semibold capitalize whitespace-nowrap ${
+                className={`shrink-0 rounded-2xl px-4 py-2 text-xs font-semibold capitalize transition active:scale-95 ${
                   mode ===
                   practiceMode
                     ? "bg-gradient-to-r from-purple-600 to-blue-600"
-                    : "border border-white/10 bg-white/5"
+                    : "border border-white/10 bg-white/5 hover:bg-white/10"
                 }`}
               >
                 {
@@ -311,7 +440,8 @@ export default function PracticeScreen({
           )}
         </section>
 
-        <section className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        {/* VOICES */}
+        <section className="mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {VOICES.map(
             (voice) => (
               <button
@@ -321,11 +451,11 @@ export default function PracticeScreen({
                     voice
                   )
                 }
-                className={`rounded-2xl px-4 py-2 text-xs font-semibold whitespace-nowrap ${
+                className={`shrink-0 rounded-2xl px-4 py-2 text-xs font-semibold capitalize transition active:scale-95 ${
                   voiceType ===
                   voice
                     ? "bg-gradient-to-r from-purple-600 to-blue-600"
-                    : "border border-white/10 bg-white/5"
+                    : "border border-white/10 bg-white/5 hover:bg-white/10"
                 }`}
               >
                 {voice}
@@ -334,17 +464,18 @@ export default function PracticeScreen({
           )}
         </section>
 
-        <section className="mb-4 rounded-3xl border border-white/10 bg-white/5 p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600">
+        {/* CONTROL CARD */}
+        <section className="mb-4 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600">
                 <Brain
                   size={20}
                 />
               </div>
 
-              <div>
-                <h2 className="text-lg font-semibold">
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold">
                   AI Conversation
                 </h2>
 
@@ -355,7 +486,7 @@ export default function PracticeScreen({
             </div>
 
             <div
-              className={`h-3 w-3 rounded-full ${
+              className={`h-3 w-3 shrink-0 rounded-full ${
                 connected
                   ? "bg-green-500"
                   : "bg-red-500"
@@ -368,7 +499,7 @@ export default function PracticeScreen({
               onClick={
                 handleStartConversation
               }
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold transition hover:opacity-90 active:scale-[0.99]"
             >
               <Phone
                 size={18}
@@ -381,7 +512,7 @@ export default function PracticeScreen({
               onClick={
                 handleEndConversation
               }
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold transition hover:bg-white/10 active:scale-[0.99]"
             >
               <PhoneOff
                 size={18}
@@ -392,10 +523,34 @@ export default function PracticeScreen({
           )}
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-4">
-          <div className="mb-4 flex h-[300px] flex-col gap-3 overflow-y-auto">
+        {/* CHAT */}
+        <section className="flex min-h-0 flex-1 flex-col rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+          {/* MESSAGE AREA */}
+          <div
+            ref={
+              messagesContainerRef
+            }
+            className="flex h-[340px] flex-col gap-3 overflow-y-auto pr-1"
+          >
+            {showEmptyState ? (
+              <div className="flex flex-1 items-center justify-center">
+                <div className="max-w-[260px] text-center">
+                  <Brain
+                    size={32}
+                    className="mx-auto mb-3 text-white/50"
+                  />
+
+                  <p className="text-sm text-white/60">
+                    Start speaking or type a message to practice English.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
             {messages.map(
-              (message) => (
+              (
+                message
+              ) => (
                 <div
                   key={
                     message.id
@@ -409,14 +564,16 @@ export default function PracticeScreen({
                 >
                   <div className="max-w-[85%]">
                     <div
-                      className={`rounded-2xl px-4 py-3 text-sm leading-6 ${
+                      className={`break-words rounded-2xl px-4 py-3 text-sm leading-6 ${
                         message.role ===
                         "user"
                           ? "bg-gradient-to-r from-purple-600 to-blue-600"
                           : "border border-white/10 bg-white/5"
                       }`}
                     >
-                      {message.text}
+                      {
+                        message.text
+                      }
                     </div>
 
                     {message.role ===
@@ -425,7 +582,7 @@ export default function PracticeScreen({
                         onClick={
                           handleReplay
                         }
-                        className="mt-1 flex items-center gap-1 text-xs text-white/60"
+                        className="mt-1 flex items-center gap-1 text-xs text-white/60 transition hover:text-white"
                       >
                         <Volume2
                           size={14}
@@ -449,24 +606,23 @@ export default function PracticeScreen({
                 AI replying...
               </div>
             )}
-
-            <div
-              ref={
-                messagesEndRef
-              }
-            />
           </div>
 
-          {error && (
-            <div className="mb-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+          {/* ERROR */}
+          {error ? (
+            <div className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
               {error}
             </div>
-          )}
+          ) : null}
 
-          <div className="flex gap-2">
+          {/* INPUT */}
+          <div className="mt-3 flex gap-2">
             <input
+              ref={inputRef}
               value={input}
-              onChange={(event) =>
+              onChange={(
+                event
+              ) =>
                 setInput(
                   event.target
                     .value
@@ -483,8 +639,15 @@ export default function PracticeScreen({
                   handleSendMessage();
                 }
               }}
-              placeholder="Type here..."
-              className="h-12 flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-white/40"
+              disabled={
+                !connected
+              }
+              placeholder={
+                connected
+                  ? "Type here..."
+                  : "Start conversation first..."
+              }
+              className="h-12 flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-purple-500/40 disabled:opacity-50"
             />
 
             <button
@@ -492,9 +655,10 @@ export default function PracticeScreen({
                 handleSendMessage
               }
               disabled={
-                loading
+                loading ||
+                !connected
               }
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 disabled:opacity-50"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 transition hover:opacity-90 disabled:opacity-50 active:scale-95"
             >
               <Send
                 size={18}
@@ -502,13 +666,17 @@ export default function PracticeScreen({
             </button>
           </div>
 
+          {/* ACTIONS */}
           <div className="mt-3 grid grid-cols-2 gap-2">
             {!listening ? (
               <button
                 onClick={
                   handleStartListening
                 }
-                className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold"
+                disabled={
+                  !connected
+                }
+                className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold transition hover:opacity-90 disabled:opacity-50 active:scale-[0.99]"
               >
                 <Mic
                   size={18}
@@ -521,7 +689,7 @@ export default function PracticeScreen({
                 onClick={
                   handleStopListening
                 }
-                className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold"
+                className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold transition hover:bg-white/10 active:scale-[0.99]"
               >
                 <MicOff
                   size={18}
@@ -535,7 +703,7 @@ export default function PracticeScreen({
               onClick={
                 handleResetConversation
               }
-              className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold"
+              className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold transition hover:bg-white/10 active:scale-[0.99]"
             >
               <RotateCcw
                 size={18}
@@ -548,4 +716,4 @@ export default function PracticeScreen({
       </div>
     </main>
   );
-}
+                }
