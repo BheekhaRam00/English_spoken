@@ -1,9 +1,15 @@
-import { generateAIReply } from "./gemini";
+import { generateAIReply }
+  from "@/services/ai/gemini";
 
-export type ConversationMessage = {
-  role: "user" | "ai";
-  text: string;
-};
+import { cleanAIText }
+  from "@/server/utils/text";
+
+export type ConversationMessage =
+  {
+    role: "user" | "ai";
+
+    text: string;
+  };
 
 export type ConversationMode =
   | "daily"
@@ -11,126 +17,175 @@ export type ConversationMode =
   | "interview"
   | "advanced";
 
-type StartConversationParams = {
-  mode?: ConversationMode;
-};
+type StartConversationParams =
+  {
+    mode?: ConversationMode;
+  };
 
-type ContinueConversationParams = {
-  userMessage: string;
+type ContinueConversationParams =
+  {
+    userMessage: string;
 
-  apiKey: string;
+    history: ConversationMessage[];
 
-  history: ConversationMessage[];
+    mode?: ConversationMode;
+  };
 
-  mode?: ConversationMode;
-};
-
-const starters = {
+const STARTERS = {
   daily: [
-    "Hello! How was your day?",
+    "Hello! How was your day today?",
 
-    "What do you usually do in your free time?",
+    "What do you usually do during weekends?",
 
-    "Tell me something interesting about your day.",
+    "Tell me something interesting about your routine.",
 
-    "How do you usually spend your weekends?"
+    "What are your hobbies and interests?"
   ],
 
   business: [
-    "Tell me about your current work responsibilities.",
+    "Tell me about your work responsibilities.",
 
-    "How do you communicate with clients at work?",
+    "How do you usually communicate with clients?",
 
-    "What skills are important in your profession?",
+    "Describe your typical workday.",
 
-    "How do you handle workplace challenges?"
+    "How do you handle meetings professionally?"
   ],
 
   interview: [
-    "Please introduce yourself professionally.",
+    "Please introduce yourself.",
 
-    "What are your strengths?",
+    "Tell me about your strengths.",
 
-    "Why do you want this job?",
+    "Why should we hire you?",
 
-    "Tell me about your work experience."
+    "Describe your professional experience."
   ],
 
   advanced: [
-    "What are your future career goals?",
+    "What are your thoughts on modern technology?",
 
-    "What do you think about modern technology?",
+    "How do you define personal success?",
 
-    "How can communication skills improve success?",
+    "Describe an important life lesson you learned recently.",
 
-    "Describe an important life decision you made."
+    "What motivates you to improve yourself?"
   ]
 };
 
 export function startConversation({
   mode = "daily"
 }: StartConversationParams = {}) {
-  const list =
-    starters[mode] ||
-    starters.daily;
+  const starters =
+    STARTERS[mode] ||
+    STARTERS.daily;
 
-  return list[
+  return starters[
     Math.floor(
       Math.random() *
-        list.length
+        starters.length
     )
   ];
 }
 
 export async function continueConversation({
   userMessage,
-  apiKey,
   history,
   mode = "daily"
 }: ContinueConversationParams): Promise<string> {
   try {
-    const contextualHistory = [
-      {
-        role: "ai" as const,
-        text: `Conversation mode: ${mode}`
-      },
+    const cleanedMessage =
+      cleanAIText(
+        userMessage
+      );
 
-      ...history
-    ];
+    if (
+      !cleanedMessage
+    ) {
+      return "Please say something so we can continue the conversation.";
+    }
 
-    const reply =
+    const aiReply =
       await generateAIReply({
-        message: userMessage,
-
-        apiKey,
+        message:
+          cleanedMessage,
 
         conversationHistory:
-          contextualHistory
+          history,
+
+        mode
       });
 
-    return cleanAIResponse(reply);
+    return cleanAIText(
+      aiReply
+    );
   } catch (error) {
     console.error(
-      "Conversation Error:",
+      "Conversation Service Error:",
       error
     );
 
-    return "I understand. Please continue speaking in English.";
+    return generateFallbackReply(
+      userMessage,
+      mode
+    );
   }
 }
 
-export function cleanAIResponse(
-  text: string
-) {
-  return text
-    .replace(/\*/g, "")
-    .replace(/#/g, "")
-    .replace(/\n+/g, " ")
-    .trim();
-}
-
 export function generateFallbackReply(
-  message: string
+  message: string,
+  mode: ConversationMode =
+    "daily"
 ) {
-  return "That's interesting. Tell me more.";
+  const lower =
+    message.toLowerCase();
+
+  if (
+    lower.includes("job") ||
+    lower.includes("work")
+  ) {
+    return "That sounds interesting. What kind of work do you usually do?";
+  }
+
+  if (
+    lower.includes("english") ||
+    lower.includes("practice")
+  ) {
+    return "Your spoken English is improving well. Keep practicing confidently.";
+  }
+
+  if (
+    lower.includes("meeting")
+  ) {
+    return "Professional communication becomes easier with regular practice.";
+  }
+
+  if (
+    lower.includes("weekend")
+  ) {
+    return "Nice. How do you usually spend your weekends?";
+  }
+
+  if (
+    mode ===
+    "business"
+  ) {
+    return "That sounds professional. Can you explain your work in more detail?";
+  }
+
+  if (
+    mode ===
+    "interview"
+  ) {
+    return "That sounds like a strong interview answer. Can you elaborate further?";
+  }
+
+  if (
+    mode ===
+    "advanced"
+  ) {
+    return "Interesting perspective. What makes you think that?";
+  }
+
+  return "That sounds good. Can you tell me more about it?";
 }
