@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useMemo,
   useState
 } from "react";
 
@@ -28,14 +27,19 @@ export default function PracticePage() {
       "female"
     );
 
-  const engine = useMemo(
+  const [engine] = useState(
     () =>
       new AudioCallEngine({
-        mode,
-        voiceType,
+        apiKey:
+          process.env
+            .NEXT_PUBLIC_GEMINI_API_KEY || "",
+
+        mode: "daily",
+
+        voiceType: "female",
+
         autoSpeak: true
-      }),
-    []
+      })
   );
 
   useEffect(() => {
