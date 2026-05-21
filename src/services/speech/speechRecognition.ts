@@ -1,171 +1,237 @@
-type SpeechRecognitionResult = {
-  transcript: string;
-};
-
-type SpeechRecognitionEvent = {
-  results: SpeechRecognitionResult[][];
-};
-
-interface CustomSpeechRecognition {
-  lang: string;
-
-  continuous: boolean;
-
-  interimResults: boolean;
-
-  maxAlternatives: number;
-
-  onstart:
-    | (() => void)
-    | null;
-
-  onend:
-    | (() => void)
-    | null;
-
-  onerror:
-    | ((
-        error?: unknown
-      ) => void)
-    | null;
-
-  onresult:
-    | ((
-        event: SpeechRecognitionEvent
-      ) => void)
-    | null;
-
-  start: () => void;
-
-  stop: () => void;
-}
-
-interface SpeechRecognitionConstructor {
-  new (): CustomSpeechRecognition;
-}
-
-type BrowserWindow = Window & {
-  SpeechRecognition?: SpeechRecognitionConstructor;
-
-  webkitSpeechRecognition?: SpeechRecognitionConstructor;
-};
-
-let recognition:
-  | CustomSpeechRecognition
-  | null = null;
-
-export function isSpeechRecognitionSupported() {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return false;
-  }
-
-  const browserWindow =
-    window as BrowserWindow;
-
-  return Boolean(
-    browserWindow.SpeechRecognition ||
-      browserWindow.webkitSpeechRecognition
-  );
-}
-
 type StartSpeechRecognitionParams =
   {
     language?: string;
+
+    continuous?: boolean;
+
+    interimResults?: boolean;
 
     onStart?: () => void;
 
     onEnd?: () => void;
 
-    onError?: (
-      error?: unknown
-    ) => void;
-
     onResult?: (
       transcript: string
     ) => void;
+
+    onError?: (
+      error:
+        | Error
+        | string
+    ) => void;
   };
 
-export function startSpeechRecognition({
-  language = "en-US",
+declare global {
+  interface Window {
+    webkitSpeechRecognition:
+      any;
 
-  onStart,
-  onEnd,
-  onError,
-  onResult
-}: StartSpeechRecognitionParams) {
+    SpeechRecognition:
+      any;
+  }
+}
+
+let recognition:
+  | any
+  | null = null;
+
+let recognitionActive =
+  false;
+
+function getRecognitionClass() {
   if (
     typeof window ===
     "undefined"
   ) {
-    return;
+    return null;
   }
 
-  const browserWindow =
-    window as BrowserWindow;
+  return (
+    window
+      .SpeechRecognition ||
+    window
+      .webkitSpeechRecognition ||
+    null
+  );
+}
 
-  const SpeechRecognitionAPI =
-    browserWindow.SpeechRecognition ||
-    browserWindow.webkitSpeechRecognition;
+export function startSpeechRecognition({
+  language =
+    "en-US",
 
-  if (!SpeechRecognitionAPI) {
-    console.error(
-      "Speech recognition is not supported."
+  continuous =
+    false,
+
+  interimResults =
+    true,
+
+  onStart,
+
+  onEnd,
+
+  onResult,
+
+  onError
+}: StartSpeechRecognitionParams) {
+  try {
+    const Recognition =
+      getRecognitionClass();
+
+    if (
+      !Recognition
+    ) {
+      onError?.(
+        "Speech recognition is not supported in this browser."
+      );
+
+      return;
+    }
+
+    if (
+      recognitionActive &&
+      recognition
+    ) {
+      recognition.stop();
+
+      recognition = null;
+
+      recognitionActive =
+        false;
+    }
+
+    recognition =
+      new Recognition();
+
+    recognition.lang =
+      language;
+
+    recognition.continuous =
+      continuous;
+
+    recognition.interimResults =
+      interimResults;
+
+    recognition.maxAlternatives =
+      1;
+
+    recognition.onstart =
+      () => {
+        recognitionActive =
+          true;
+
+        onStart?.();
+      };
+
+    recognition.onend =
+      () => {
+        recognitionActive =
+          false;
+
+        onEnd?.();
+      };
+
+    recognition.onerror =
+      (
+        event: any
+      ) => {
+        recognitionActive =
+          false;
+
+        const errorMessage =
+          event?.error ||
+          "Speech recognition failed.";
+
+        onError?.(
+          errorMessage
+        );
+      };
+
+    recognition.onresult =
+      (
+        event: any
+      ) => {
+        try {
+          let finalTranscript =
+            "";
+
+          for (
+            let i = 0;
+            i <
+            event.results
+              .length;
+            i++
+          ) {
+            const result =
+              event.results[
+                i
+              ];
+
+            if (
+              result.isFinal
+            ) {
+              finalTranscript +=
+                result[0]
+                  .transcript;
+            }
+          }
+
+          const cleanedTranscript =
+            finalTranscript.trim();
+
+          if (
+            cleanedTranscript
+          ) {
+            onResult?.(
+              cleanedTranscript
+            );
+          }
+        } catch (error) {
+          onError?.(
+            error instanceof
+              Error
+              ? error
+              : "Unable to process speech recognition result."
+          );
+        }
+      };
+
+    recognition.start();
+  } catch (error) {
+    recognitionActive =
+      false;
+
+    onError?.(
+      error instanceof
+        Error
+        ? error
+        : "Speech recognition failed."
     );
-
-    return;
   }
-
-  recognition =
-    new SpeechRecognitionAPI();
-
-  recognition.lang =
-    language;
-
-  recognition.continuous =
-    false;
-
-  recognition.interimResults =
-    false;
-
-  recognition.maxAlternatives =
-    1;
-
-  recognition.onstart = () => {
-    onStart?.();
-  };
-
-  recognition.onend = () => {
-    onEnd?.();
-  };
-
-  recognition.onerror = (
-    error
-  ) => {
-    onError?.(error);
-  };
-
-  recognition.onresult = (
-    event
-  ) => {
-    const transcript =
-      event.results[0][0]
-        .transcript;
-
-    onResult?.(
-      transcript
-    );
-  };
-
-  recognition.start();
 }
 
 export function stopSpeechRecognition() {
-  if (recognition) {
-    recognition.stop();
+  try {
+    if (
+      recognition
+    ) {
+      recognition.stop();
 
-    recognition = null;
+      recognition =
+        null;
+    }
+
+    recognitionActive =
+      false;
+  } catch (error) {
+    console.error(
+      "Speech Recognition Stop Error:",
+      error
+    );
   }
+}
+
+export function isSpeechRecognitionSupported() {
+  return Boolean(
+    getRecognitionClass()
+  );
 }
