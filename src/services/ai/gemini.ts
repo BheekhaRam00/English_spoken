@@ -1,5 +1,6 @@
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
 type GeminiResponse = {
   candidates?: {
     content?: {
@@ -31,10 +32,11 @@ You are FluentPro AI.
 You help Indian users improve spoken English fluency naturally.
 
 Rules:
-- Speak in very natural conversational English.
+- Speak in natural conversational English.
+- Sound friendly and human.
 - Keep replies short and realistic.
-- Reply like a friendly Indian English trainer.
-- Ask follow-up questions naturally.
+- Ask natural follow-up questions.
+- Encourage the learner confidently.
 - Avoid robotic replies.
 - Never repeat the same sentence.
 - Never use markdown.
@@ -64,7 +66,7 @@ function buildConversationPrompt(
   return `
 ${SYSTEM_PROMPT}
 
-Previous Conversation:
+Conversation History:
 ${formattedHistory}
 
 User: ${message}
@@ -84,7 +86,7 @@ export async function generateAIReply({
         "Gemini API key missing"
       );
 
-      return "AI setup is incomplete. Please add Gemini API key.";
+      return "AI setup issue detected.";
     }
 
     const prompt =
@@ -117,41 +119,11 @@ export async function generateAIReply({
           ],
 
           generationConfig: {
-            temperature: 0.9,
+            temperature: 0.85,
             topP: 1,
-            topK: 40,
-            maxOutputTokens: 120
-          },
-
-          safetySettings: [
-            {
-              category:
-                "HARM_CATEGORY_HARASSMENT",
-              threshold:
-                "BLOCK_NONE"
-            },
-
-            {
-              category:
-                "HARM_CATEGORY_HATE_SPEECH",
-              threshold:
-                "BLOCK_NONE"
-            },
-
-            {
-              category:
-                "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold:
-                "BLOCK_NONE"
-            },
-
-            {
-              category:
-                "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold:
-                "BLOCK_NONE"
-            }
-          ]
+            topK: 32,
+            maxOutputTokens: 100
+          }
         })
       }
     );
@@ -167,21 +139,22 @@ export async function generateAIReply({
     if (!response.ok) {
       console.error(
         "Gemini API Error:",
-        data?.error?.message
+        data
       );
 
       return "AI server error. Please try again.";
     }
 
     const reply =
-      data?.candidates?.[0]?.content
-        ?.parts?.[0]?.text;
+      data?.candidates?.[0]
+        ?.content?.parts?.[0]
+        ?.text;
 
     if (
       !reply ||
-      reply.trim().length === 0
+      !reply.trim()
     ) {
-      return "Can you tell me more about that?";
+      return "Can you tell me more?";
     }
 
     return reply
@@ -190,10 +163,10 @@ export async function generateAIReply({
       .trim();
   } catch (error) {
     console.error(
-      "Gemini AI Fatal Error:",
+      "Gemini Fatal Error:",
       error
     );
 
-    return "Connection issue. Please try again.";
+    return "Connection problem. Please try again.";
   }
 }
