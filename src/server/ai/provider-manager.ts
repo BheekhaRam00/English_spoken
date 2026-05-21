@@ -44,6 +44,10 @@ function normalizeReply(
       /\n{3,}/g,
       "\n\n"
     )
+    .replace(
+      /\s{2,}/g,
+      " "
+    )
     .trim();
 }
 
@@ -55,13 +59,30 @@ export async function requestAICompletion({
 }: RequestAICompletionParams) {
   try {
     /*
+    CLEAN INPUT
+    */
+    const cleanedMessage =
+      cleanAIText(
+        message
+      ).trim();
+
+    if (
+      !cleanedMessage
+    ) {
+      throw new Error(
+        "Empty message."
+      );
+    }
+
+    /*
     OPENROUTER AI
     */
     const openRouterReply =
       await callOpenRouter({
         apiKey,
 
-        message,
+        message:
+          cleanedMessage,
 
         history,
 
@@ -87,7 +108,7 @@ export async function requestAICompletion({
     }
 
     logInfo(
-      `AI response generated successfully.`
+      "AI response generated successfully."
     );
 
     return cleanedReply;
@@ -104,7 +125,7 @@ export async function requestAICompletion({
     FALLBACK
     */
     const fallbackReply =
-      callMockProvider({
+      await callMockProvider({
         message,
 
         mode
