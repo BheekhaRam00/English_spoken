@@ -27,31 +27,43 @@ type ContinueConversationParams = {
 
 const starters = {
   daily: [
-    "Hello! Tell me about your day.",
-    "What did you do today?",
-    "What are your hobbies?",
+    "Hello! How was your day?",
+
+    "What do you usually do in your free time?",
+
+    "Tell me something interesting about your day.",
+
     "How do you usually spend your weekends?"
   ],
 
   business: [
-    "Tell me about your work responsibilities.",
-    "How do you communicate with clients?",
-    "Describe a challenge you solved at work.",
-    "How do you handle professional meetings?"
+    "Tell me about your current work responsibilities.",
+
+    "How do you communicate with clients at work?",
+
+    "What skills are important in your profession?",
+
+    "How do you handle workplace challenges?"
   ],
 
   interview: [
-    "Please introduce yourself.",
-    "Tell me about your strengths.",
-    "Why should we hire you?",
-    "Describe your professional experience."
+    "Please introduce yourself professionally.",
+
+    "What are your strengths?",
+
+    "Why do you want this job?",
+
+    "Tell me about your work experience."
   ],
 
   advanced: [
-    "Let's practice advanced English conversation.",
-    "Tell me your opinion on modern technology.",
-    "How would you explain your future goals professionally?",
-    "Describe a difficult decision you made recently."
+    "What are your future career goals?",
+
+    "What do you think about modern technology?",
+
+    "How can communication skills improve success?",
+
+    "Describe an important life decision you made."
   ]
 };
 
@@ -62,11 +74,12 @@ export function startConversation({
     starters[mode] ||
     starters.daily;
 
-  const randomIndex = Math.floor(
-    Math.random() * list.length
-  );
-
-  return list[randomIndex];
+  return list[
+    Math.floor(
+      Math.random() *
+        list.length
+    )
+  ];
 }
 
 export async function continueConversation({
@@ -102,7 +115,7 @@ export async function continueConversation({
       error
     );
 
-    return "Please continue speaking in English. You are doing well.";
+    return "I understand. Please continue speaking in English.";
   }
 }
 
@@ -119,33 +132,5 @@ export function cleanAIResponse(
 export function generateFallbackReply(
   message: string
 ) {
-  const lower =
-    message.toLowerCase();
-
-  if (
-    lower.includes("job") ||
-    lower.includes("work")
-  ) {
-    return "That sounds interesting. What are your main responsibilities at work?";
-  }
-
-  if (
-    lower.includes("business")
-  ) {
-    return "Professional communication improves with regular speaking practice.";
-  }
-
-  if (
-    lower.includes("english")
-  ) {
-    return "Your English is improving. Keep practicing confidently every day.";
-  }
-
-  if (
-    lower.includes("meeting")
-  ) {
-    return "Meetings become easier when you speak clearly and confidently.";
-  }
-
-  return "That's good. Please tell me more in English.";
+  return "That's interesting. Tell me more.";
 }
