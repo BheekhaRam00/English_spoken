@@ -1,7 +1,15 @@
+// src/utils/validators.ts
+
 import {
   VoiceType,
   LearningMode
 } from "@/types";
+
+type BrowserWindow = Window & {
+  SpeechRecognition?: unknown;
+
+  webkitSpeechRecognition?: unknown;
+};
 
 export function isValidEmail(
   email: string
@@ -110,9 +118,12 @@ export function isSpeechRecognitionAvailable() {
     return false;
   }
 
+  const browserWindow =
+    window as BrowserWindow;
+
   return Boolean(
-    window.SpeechRecognition ||
-      window.webkitSpeechRecognition
+    browserWindow.SpeechRecognition ||
+      browserWindow.webkitSpeechRecognition
   );
 }
 
