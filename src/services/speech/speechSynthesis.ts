@@ -23,7 +23,7 @@ export type SpeakTextOptions = {
   ) => void;
 };
 
-function selectBestVoice(
+function getIndianVoice(
   voiceType:
     | "female"
     | "male"
@@ -43,29 +43,18 @@ function selectBestVoice(
     return null;
   }
 
-  const englishVoices =
-    voices.filter(
-      (voice) =>
-        voice.lang
-          .toLowerCase()
-          .includes("en")
-    );
-
   const indianVoices =
-    englishVoices.filter(
-      (voice) =>
-        voice.lang
-          .toLowerCase()
-          .includes("en-in") ||
-
-        voice.name
-          .toLowerCase()
-          .includes("india") ||
-
-        voice.name
-          .toLowerCase()
-          .includes("indian")
+    voices.filter((voice) =>
+      voice.lang
+        .toLowerCase()
+        .includes("en-in")
     );
+
+  if (
+    !indianVoices.length
+  ) {
+    return voices[0];
+  }
 
   if (
     voiceType ===
@@ -76,52 +65,41 @@ function selectBestVoice(
         (voice) =>
           voice.name
             .toLowerCase()
-            .includes(
-              "google"
-            )
+            .includes("female")
       ) ||
 
-      indianVoices[0] ||
-
-      englishVoices.find(
+      indianVoices.find(
         (voice) =>
           voice.name
             .toLowerCase()
-            .includes(
-              "female"
-            )
+            .includes("google")
       ) ||
 
-      englishVoices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes(
-              "zira"
-            )
-      ) ||
-
-      englishVoices[0]
+      indianVoices[0]
     );
   }
 
   if (
-    voiceType ===
-    "male"
+    voiceType === "male"
   ) {
     return (
-      indianVoices[0] ||
-
-      englishVoices.find(
+      indianVoices.find(
         (voice) =>
           voice.name
             .toLowerCase()
-            .includes(
-              "david"
-            )
+            .includes("male")
       ) ||
 
-      englishVoices[0]
+      indianVoices.find(
+        (voice) =>
+          voice.name
+            .toLowerCase()
+            .includes("microsoft")
+      ) ||
+
+      indianVoices[
+        indianVoices.length - 1
+      ]
     );
   }
 
@@ -130,31 +108,23 @@ function selectBestVoice(
       (voice) =>
         voice.name
           .toLowerCase()
-          .includes(
-            "google"
-          )
+          .includes("google")
     ) ||
 
-    indianVoices[0] ||
-
-    englishVoices[0] ||
-
-    voices[0]
+    indianVoices[0]
   );
 }
 
 export function speakText({
   text,
 
-  voiceType =
-    "female",
+  voiceType = "female",
 
-  language =
-    "en-IN",
+  language = "en-IN",
 
-  rate = 0.9,
+  rate,
 
-  pitch = 1,
+  pitch,
 
   volume = 1,
 
@@ -185,99 +155,77 @@ export function speakText({
       return;
     }
 
-    const speak =
-      () => {
-        try {
-          const utterance =
-            new SpeechSynthesisUtterance(
-              text
-            );
+    const utterance =
+      new SpeechSynthesisUtterance(
+        text
+      );
 
-          const selectedVoice =
-            selectBestVoice(
-              voiceType
-            );
+    const selectedVoice =
+      getIndianVoice(
+        voiceType
+      );
 
-          if (
-            selectedVoice
-          ) {
-            utterance.voice =
-              selectedVoice;
+    utterance.lang =
+      "en-IN";
 
-            utterance.lang =
-              selectedVoice.lang;
-          } else {
-            utterance.lang =
-              language;
-          }
-
-          utterance.rate =
-            rate;
-
-          utterance.pitch =
-            voiceType ===
-            "female"
-              ? 1.03
-              : pitch;
-
-          utterance.volume =
-            volume;
-
-          utterance.onstart =
-            () => {
-              onStart?.();
-            };
-
-          utterance.onend =
-            () => {
-              onEnd?.();
-            };
-
-          utterance.onerror =
-            () => {
-              onError?.(
-                "Unable to play voice."
-              );
-            };
-
-          window.speechSynthesis.cancel();
-
-          setTimeout(() => {
-            window.speechSynthesis.speak(
-              utterance
-            );
-          }, 120);
-        } catch (error) {
-          console.error(
-            "Speech play error:",
-            error
-          );
-
-          onError?.(
-            "Voice playback failed."
-          );
-        }
-      };
-
-    const voices =
-      window.speechSynthesis.getVoices();
+    utterance.volume =
+      volume;
 
     if (
-      voices.length === 0
+      voiceType ===
+      "female"
     ) {
-      window.speechSynthesis.onvoiceschanged =
-        () => {
-          speak();
-        };
+      utterance.rate =
+        rate ?? 0.72;
 
-      setTimeout(() => {
-        speak();
-      }, 800);
+      utterance.pitch =
+        pitch ?? 1.02;
+    } else if (
+      voiceType ===
+      "male"
+    ) {
+      utterance.rate =
+        rate ?? 0.68;
 
-      return;
+      utterance.pitch =
+        pitch ?? 0.82;
+    } else {
+      utterance.rate =
+        rate ?? 0.75;
+
+      utterance.pitch =
+        pitch ?? 0.92;
     }
 
-    speak();
+    if (selectedVoice) {
+      utterance.voice =
+        selectedVoice;
+    }
+
+    utterance.onstart =
+      () => {
+        onStart?.();
+      };
+
+    utterance.onend =
+      () => {
+        onEnd?.();
+      };
+
+    utterance.onerror =
+      () => {
+        onError?.(
+          "Voice playback failed."
+        );
+      };
+
+    window.speechSynthesis.cancel();
+
+    setTimeout(() => {
+      window.speechSynthesis.speak(
+        utterance
+      );
+    }, 120);
   } catch (error) {
     console.error(
       "Speech synthesis error:",
@@ -285,7 +233,7 @@ export function speakText({
     );
 
     onError?.(
-      "Speech synthesis failed."
+      "Unable to play voice."
     );
   }
 }
@@ -334,10 +282,7 @@ export function getAvailableVoices() {
   return window.speechSynthesis
     .getVoices()
     .map((voice) => ({
-      name:
-        voice.name,
-
-      lang:
-        voice.lang
+      name: voice.name,
+      lang: voice.lang
     }));
 }
