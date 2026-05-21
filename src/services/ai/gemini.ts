@@ -1,19 +1,15 @@
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const OPENROUTER_API_URL =
+  "https://openrouter.ai/api/v1/chat/completions";
 
-type GeminiResponse = {
-  candidates?: {
-    content?: {
-      parts?: {
-        text?: string;
-      }[];
+type OpenRouterResponse = {
+  choices?: {
+    message?: {
+      content?: string;
     };
   }[];
 
   error?: {
-    code?: number;
     message?: string;
-    status?: string;
   };
 };
 
@@ -34,16 +30,17 @@ You are FluentPro AI.
 You help Indian users improve spoken English fluency naturally.
 
 Rules:
-- Speak naturally.
-- Keep replies short.
-- Sound human and friendly.
-- Ask follow-up questions naturally.
-- Avoid robotic responses.
+- Speak naturally like a real human conversation partner.
+- Sound friendly, confident, and supportive.
+- Keep replies short and conversational.
+- Ask natural follow-up questions.
+- Avoid robotic replies.
+- Never repeat the same sentence.
 - Never use markdown.
-- Keep replies under 60 words.
+- Keep replies under 50 words.
 `;
 
-function buildConversationPrompt(
+function buildMessages(
   message: string,
   history?: {
     role: "user" | "ai";
@@ -53,26 +50,116 @@ function buildConversationPrompt(
   const formattedHistory =
     history
       ?.slice(-10)
-      .map((item) => {
-        const role =
+      .map((item) => ({
+        role:
           item.role === "user"
-            ? "User"
-            : "AI";
+            ? "user"
+            : "assistant",
 
-        return `${role}: ${item.text}`;
-      })
-      .join("\n") || "";
+        content: item.text
+      })) || [];
 
-  return `
-${SYSTEM_PROMPT}
+  return [
+    {
+      role: "system",
+      content: SYSTEM_PROMPT
+    },
 
-Conversation:
-${formattedHistory}
+    ...formattedHistory,
 
-User: ${message}
+    {
+      role: "user",
+      content: message
+    }
+  ];
+}
 
-AI:
-`;
+async function requestModel({
+  apiKey,
+  model,
+  messages
+}: {
+  apiKey: string;
+
+  model: string;
+
+  messages: {
+    role: string;
+    content: string;
+  }[];
+}) {
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(() => {
+      controller.abort();
+    }, 20000);
+
+  try {
+    const response = await fetch(
+      OPENROUTER_API_URL,
+      {
+        method: "POST",
+
+        signal:
+          controller.signal,
+
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+
+          "Content-Type":
+            "application/json",
+
+          "HTTP-Referer":
+            "https://fluentpro-ai.vercel.app",
+
+          "X-Title":
+            "FluentPro AI"
+        },
+
+        body: JSON.stringify({
+          model,
+
+          messages,
+
+          temperature: 0.9,
+
+          max_tokens: 120
+        })
+      }
+    );
+
+    const data: OpenRouterResponse =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error?.message ||
+          `HTTP ${response.status}`
+      );
+    }
+
+    const reply =
+      data?.choices?.[0]
+        ?.message?.content;
+
+    if (
+      !reply ||
+      !reply.trim()
+    ) {
+      throw new Error(
+        "Empty AI reply"
+      );
+    }
+
+    return reply
+      .replace(/\*/g, "")
+      .replace(/\n+/g, " ")
+      .trim();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function generateAIReply({
@@ -82,133 +169,109 @@ export async function generateAIReply({
 }: GenerateAIReplyParams): Promise<string> {
   try {
     if (!apiKey?.trim()) {
-      console.error(
-        "Gemini API key missing"
-      );
-
-      return "DEBUG: Gemini API key missing.";
+      return "AI setup is incomplete.";
     }
 
-    const prompt =
-      buildConversationPrompt(
+    const messages =
+      buildMessages(
         message,
         conversationHistory
       );
 
-    console.log(
-      "Gemini Request Started"
-    );
+    try {
+      return await requestModel({
+        apiKey,
 
-    const response = await fetch(
-      `${GEMINI_API_URL}?key=${apiKey}`,
-      {
-        method: "POST",
+        model:
+          "deepseek/deepseek-chat-v3-0324:free",
 
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ],
-
-          generationConfig: {
-            temperature: 0.85,
-            topP: 1,
-            topK: 32,
-            maxOutputTokens: 100
-          }
-        })
-      }
-    );
-
-    console.log(
-      "Gemini HTTP Status:",
-      response.status
-    );
-
-    const rawText =
-      await response.text();
-
-    console.log(
-      "Gemini Raw Response:",
-      rawText
-    );
-
-    let data: GeminiResponse;
+        messages
+      });
+    } catch (deepseekError) {
+      console.error(
+        "DeepSeek failed:",
+        deepseekError
+      );
+    }
 
     try {
-      data =
-        JSON.parse(rawText);
-    } catch (jsonError) {
-      console.error(
-        "Gemini JSON Parse Error:",
-        jsonError
-      );
+      return await requestModel({
+        apiKey,
 
-      return `DEBUG: Invalid JSON response: ${rawText}`;
+        model:
+          "mistralai/mistral-7b-instruct:free",
+
+        messages
+      });
+    } catch (mistralError) {
+      console.error(
+        "Mistral failed:",
+        mistralError
+      );
     }
 
-    if (!response.ok) {
-      console.error(
-        "Gemini API Error:",
-        data
-      );
-
-      return `DEBUG API ERROR:
-Status: ${response.status}
-
-Message:
-${
-  data?.error?.message ||
-  "Unknown Gemini API error"
-}`;
-    }
-
-    const reply =
-      data?.candidates?.[0]
-        ?.content?.parts?.[0]
-        ?.text;
-
-    if (
-      !reply ||
-      !reply.trim()
-    ) {
-      console.error(
-        "Gemini Empty Reply:",
-        data
-      );
-
-      return `DEBUG: Empty AI reply received.
-Raw Response:
-${rawText}`;
-    }
-
-    return reply
-      .replace(/\*/g, "")
-      .replace(/\n+/g, " ")
-      .trim();
+    return generateOfflineReply(
+      message
+    );
   } catch (error) {
     console.error(
-      "Gemini Fatal Error:",
+      "OpenRouter Fatal Error:",
       error
     );
 
-    if (
-      error instanceof Error
-    ) {
-      return `DEBUG FATAL ERROR:
-${error.message}`;
-    }
-
-    return "DEBUG: Unknown fatal error.";
+    return generateOfflineReply(
+      message
+    );
   }
+}
+
+function generateOfflineReply(
+  message: string
+) {
+  const lower =
+    message.toLowerCase();
+
+  if (
+    lower.includes("job") ||
+    lower.includes("work")
+  ) {
+    return "That sounds interesting. What kind of work do you do every day?";
+  }
+
+  if (
+    lower.includes("weekend")
+  ) {
+    return "Nice. How do you usually relax during weekends?";
+  }
+
+  if (
+    lower.includes("english")
+  ) {
+    return "Your English is improving well. Keep speaking confidently.";
+  }
+
+  if (
+    lower.includes("meeting")
+  ) {
+    return "Professional speaking becomes easier with regular practice.";
+  }
+
+  const replies = [
+    "That's interesting. Tell me more.",
+
+    "I understand. What happened next?",
+
+    "That sounds good. How do you feel about it?",
+
+    "Nice. Can you explain a little more?",
+
+    "Very good. What do you usually do in that situation?"
+  ];
+
+  return replies[
+    Math.floor(
+      Math.random() *
+        replies.length
+    )
+  ];
 }
