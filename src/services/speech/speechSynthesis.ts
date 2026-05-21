@@ -23,7 +23,7 @@ export type SpeakTextOptions = {
   ) => void;
 };
 
-function getIndianVoice(
+function selectBestVoice(
   voiceType:
     | "female"
     | "male"
@@ -43,8 +43,16 @@ function getIndianVoice(
     return null;
   }
 
-  const indianVoices =
+  const englishVoices =
     voices.filter(
+      (voice) =>
+        voice.lang
+          .toLowerCase()
+          .includes("en")
+    );
+
+  const indianVoices =
+    englishVoices.filter(
       (voice) =>
         voice.lang
           .toLowerCase()
@@ -60,53 +68,9 @@ function getIndianVoice(
     );
 
   if (
-    indianVoices.length
+    voiceType ===
+    "female"
   ) {
-    if (
-      voiceType ===
-      "female"
-    ) {
-      return (
-        indianVoices.find(
-          (voice) =>
-            voice.name
-              .toLowerCase()
-              .includes(
-                "female"
-              )
-        ) ||
-
-        indianVoices.find(
-          (voice) =>
-            voice.name
-              .toLowerCase()
-              .includes(
-                "google"
-              )
-        ) ||
-
-        indianVoices[0]
-      );
-    }
-
-    if (
-      voiceType ===
-      "male"
-    ) {
-      return (
-        indianVoices.find(
-          (voice) =>
-            voice.name
-              .toLowerCase()
-              .includes(
-                "male"
-              )
-        ) ||
-
-        indianVoices[0]
-      );
-    }
-
     return (
       indianVoices.find(
         (voice) =>
@@ -117,48 +81,9 @@ function getIndianVoice(
             )
       ) ||
 
-      indianVoices[0]
-    );
-  }
+      indianVoices[0] ||
 
-  return null;
-}
-
-function getVoiceByType(
-  voiceType:
-    | "female"
-    | "male"
-    | "professional"
-) {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return null;
-  }
-
-  const voices =
-    window.speechSynthesis.getVoices();
-
-  if (!voices.length) {
-    return null;
-  }
-
-  const indianVoice =
-    getIndianVoice(
-      voiceType
-    );
-
-  if (indianVoice) {
-    return indianVoice;
-  }
-
-  if (
-    voiceType ===
-    "female"
-  ) {
-    return (
-      voices.find(
+      englishVoices.find(
         (voice) =>
           voice.name
             .toLowerCase()
@@ -167,7 +92,7 @@ function getVoiceByType(
             )
       ) ||
 
-      voices.find(
+      englishVoices.find(
         (voice) =>
           voice.name
             .toLowerCase()
@@ -176,16 +101,7 @@ function getVoiceByType(
             )
       ) ||
 
-      voices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes(
-              "google"
-            )
-      ) ||
-
-      voices[0]
+      englishVoices[0]
     );
   }
 
@@ -194,16 +110,9 @@ function getVoiceByType(
     "male"
   ) {
     return (
-      voices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes(
-              "male"
-            )
-      ) ||
+      indianVoices[0] ||
 
-      voices.find(
+      englishVoices.find(
         (voice) =>
           voice.name
             .toLowerCase()
@@ -212,28 +121,25 @@ function getVoiceByType(
             )
       ) ||
 
-      voices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes(
-              "google"
-            )
-      ) ||
-
-      voices[0]
+      englishVoices[0]
     );
   }
 
   return (
-    voices.find(
+    indianVoices.find(
       (voice) =>
         voice.name
           .toLowerCase()
           .includes(
             "google"
           )
-    ) || voices[0]
+    ) ||
+
+    indianVoices[0] ||
+
+    englishVoices[0] ||
+
+    voices[0]
   );
 }
 
@@ -246,7 +152,7 @@ export function speakText({
   language =
     "en-IN",
 
-  rate = 0.88,
+  rate = 0.9,
 
   pitch = 1,
 
@@ -273,71 +179,84 @@ export function speakText({
       )
     ) {
       onError?.(
-        "Speech synthesis is not supported on this device."
+        "Speech synthesis is not supported."
       );
 
       return;
     }
 
-    const loadAndSpeak =
+    const speak =
       () => {
-        const utterance =
-          new SpeechSynthesisUtterance(
-            text
-          );
-
-        utterance.lang =
-          language;
-
-        utterance.rate =
-          rate;
-
-        utterance.pitch =
-          voiceType ===
-          "female"
-            ? 1.02
-            : pitch;
-
-        utterance.volume =
-          volume;
-
-        const selectedVoice =
-          getVoiceByType(
-            voiceType
-          );
-
-        if (
-          selectedVoice
-        ) {
-          utterance.voice =
-            selectedVoice;
-
-          utterance.lang =
-            selectedVoice.lang;
-        }
-
-        utterance.onstart =
-          () => {
-            onStart?.();
-          };
-
-        utterance.onend =
-          () => {
-            onEnd?.();
-          };
-
-        utterance.onerror =
-          () => {
-            onError?.(
-              "Unable to play voice."
+        try {
+          const utterance =
+            new SpeechSynthesisUtterance(
+              text
             );
-          };
 
-        window.speechSynthesis.cancel();
+          const selectedVoice =
+            selectBestVoice(
+              voiceType
+            );
 
-        window.speechSynthesis.speak(
-          utterance
-        );
+          if (
+            selectedVoice
+          ) {
+            utterance.voice =
+              selectedVoice;
+
+            utterance.lang =
+              selectedVoice.lang;
+          } else {
+            utterance.lang =
+              language;
+          }
+
+          utterance.rate =
+            rate;
+
+          utterance.pitch =
+            voiceType ===
+            "female"
+              ? 1.03
+              : pitch;
+
+          utterance.volume =
+            volume;
+
+          utterance.onstart =
+            () => {
+              onStart?.();
+            };
+
+          utterance.onend =
+            () => {
+              onEnd?.();
+            };
+
+          utterance.onerror =
+            () => {
+              onError?.(
+                "Unable to play voice."
+              );
+            };
+
+          window.speechSynthesis.cancel();
+
+          setTimeout(() => {
+            window.speechSynthesis.speak(
+              utterance
+            );
+          }, 120);
+        } catch (error) {
+          console.error(
+            "Speech play error:",
+            error
+          );
+
+          onError?.(
+            "Voice playback failed."
+          );
+        }
       };
 
     const voices =
@@ -348,17 +267,17 @@ export function speakText({
     ) {
       window.speechSynthesis.onvoiceschanged =
         () => {
-          loadAndSpeak();
+          speak();
         };
 
       setTimeout(() => {
-        loadAndSpeak();
-      }, 400);
+        speak();
+      }, 800);
 
       return;
     }
 
-    loadAndSpeak();
+    speak();
   } catch (error) {
     console.error(
       "Speech synthesis error:",
@@ -366,7 +285,7 @@ export function speakText({
     );
 
     onError?.(
-      "Voice playback failed."
+      "Speech synthesis failed."
     );
   }
 }
@@ -421,4 +340,4 @@ export function getAvailableVoices() {
       lang:
         voice.lang
     }));
-      }
+}
