@@ -1,6 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useState
+} from "react";
 
 import Link from "next/link";
 
@@ -11,16 +14,13 @@ import {
   RotateCcw,
   CheckCircle2,
   Sparkles,
-  Brain
+  Brain,
+  Loader2
 } from "lucide-react";
 
 import {
   LearningMode
 } from "@/types";
-
-import {
-  LearningEngine
-} from "@/lib/learning-engine";
 
 type LearnScreenProps = {
   mode: LearningMode;
@@ -28,8 +28,6 @@ type LearnScreenProps = {
   onModeChange: (
     mode: LearningMode
   ) => void;
-
-  engine: LearningEngine;
 };
 
 const modes: LearningMode[] = [
@@ -41,27 +39,75 @@ const modes: LearningMode[] = [
   "advanced"
 ];
 
+type LessonData = {
+  title?: string;
+
+  category?: string;
+
+  english: string;
+
+  hindi: string;
+
+  vocabulary?: {
+    word: string;
+
+    meaning: string;
+
+    pronunciation: string;
+  }[];
+
+  pronunciationTip?: string;
+};
+
 export default function LearnScreen({
   mode,
-  onModeChange,
-  engine
+  onModeChange
 }: LearnScreenProps) {
-  const lessons =
-    engine.getLessons();
+  const [lesson, setLesson] =
+    useState<LessonData | null>(
+      null
+    );
 
-  const [currentIndex, setCurrentIndex] =
-    useState(0);
+  const [loading, setLoading] =
+    useState(false);
 
-  const lesson = useMemo(
-    () =>
-      lessons[
-        currentIndex
-      ],
-    [
-      lessons,
-      currentIndex
-    ]
-  );
+  const fetchLesson =
+    async () => {
+      try {
+        setLoading(true);
+
+        const response =
+          await fetch(
+            `/api/lesson?mode=${mode}`,
+            {
+              cache: "no-store"
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          data?.success &&
+          data?.lesson
+        ) {
+          setLesson(
+            data.lesson
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Lesson fetch error:",
+          error
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  useEffect(() => {
+    fetchLesson();
+  }, [mode]);
 
   const speakText = (
     text: string
@@ -84,8 +130,6 @@ export default function LearnScreen({
     utterance.rate =
       0.92;
 
-    utterance.pitch = 1;
-
     window.speechSynthesis.cancel();
 
     window.speechSynthesis.speak(
@@ -93,41 +137,31 @@ export default function LearnScreen({
     );
   };
 
-  const nextLesson = () => {
-    if (
-      currentIndex <
-      lessons.length - 1
-    ) {
-      setCurrentIndex(
-        (prev) =>
-          prev + 1
-      );
-    }
-  };
-
-  const previousLesson =
-    () => {
-      if (
-        currentIndex > 0
-      ) {
-        setCurrentIndex(
-          (prev) =>
-            prev - 1
-        );
-      }
-    };
-
-  if (!lesson) {
+  if (
+    loading ||
+    !lesson
+  ) {
     return (
       <main className="page-container">
-        <div className="glass-card p-8 text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            No Lessons Available
-          </h2>
+        <div
+          className="glass-card"
+          style={{
+            padding: "60px",
+            textAlign: "center"
+          }}
+        >
+          <Loader2
+            size={42}
+            className="animate-spin"
+          />
 
-          <p className="text-white/70">
-            Please select another learning mode.
-          </p>
+          <h2
+            style={{
+              marginTop: "20px"
+            }}
+          >
+            Generating AI Lesson...
+          </h2>
         </div>
       </main>
     );
@@ -136,7 +170,6 @@ export default function LearnScreen({
   return (
     <main className="page-container">
       <section
-        className="fade-in"
         style={{
           display: "flex",
           alignItems:
@@ -182,21 +215,18 @@ export default function LearnScreen({
                 "rgba(255,255,255,0.72)"
             }}
           >
-            AI-powered spoken English learning.
+            Real AI-generated spoken English lessons.
           </p>
         </div>
       </section>
 
       <section
-        className="fade-in"
         style={{
           display: "flex",
           gap: "12px",
           overflowX: "auto",
           marginBottom:
-            "24px",
-          paddingBottom:
-            "6px"
+            "24px"
         }}
       >
         {modes.map(
@@ -207,15 +237,11 @@ export default function LearnScreen({
               key={
                 learningMode
               }
-              onClick={() => {
+              onClick={() =>
                 onModeChange(
                   learningMode
-                );
-
-                setCurrentIndex(
-                  0
-                );
-              }}
+                )
+              }
               style={{
                 minWidth:
                   "120px",
@@ -228,11 +254,11 @@ export default function LearnScreen({
                 background:
                   mode ===
                   learningMode
-                    ? "linear-gradient(90deg, #9333ea, #2563eb)"
+                    ? "linear-gradient(90deg,#9333ea,#2563eb)"
                     : "rgba(255,255,255,0.05)",
 
                 color:
-                  "#ffffff",
+                  "#fff",
 
                 fontWeight:
                   600,
@@ -250,7 +276,7 @@ export default function LearnScreen({
       </section>
 
       <section
-        className="glass-card fade-in"
+        className="glass-card"
         style={{
           padding: "28px"
         }}
@@ -260,13 +286,8 @@ export default function LearnScreen({
             display:
               "flex",
 
-            alignItems:
-              "center",
-
             justifyContent:
               "space-between",
-
-            gap: "12px",
 
             marginBottom:
               "24px"
@@ -296,18 +317,10 @@ export default function LearnScreen({
               size={18}
             />
 
-            <span
-              style={{
-                fontSize:
-                  "14px",
-
-                fontWeight:
-                  600
-              }}
-            >
-              {
-                lesson.category
-              }
+            <span>
+              {lesson.title ||
+                lesson.category ||
+                "AI Lesson"}
             </span>
           </div>
 
@@ -319,62 +332,42 @@ export default function LearnScreen({
               alignItems:
                 "center",
 
-              gap: "8px",
-
-              color:
-                "rgba(255,255,255,0.7)"
+              gap: "8px"
             }}
           >
             <Brain
               size={18}
             />
 
-            <span
-              style={{
-                fontSize:
-                  "14px"
-              }}
-            >
-              AI Lesson
+            <span>
+              Live AI
             </span>
           </div>
         </div>
 
         <h2
           style={{
-            fontSize: "28px",
-            lineHeight: 1.6,
+            fontSize: "30px",
+            lineHeight: 1.7,
             marginBottom:
               "24px"
           }}
         >
-          {lesson.english ||
-            lesson.sentence}
+          {
+            lesson.english
+          }
         </h2>
 
         <button
           className="primary-button"
           onClick={() =>
             speakText(
-              lesson.english ||
-                lesson.sentence ||
-                ""
+              lesson.english
             )
           }
           style={{
             marginBottom:
-              "28px",
-
-            display:
-              "flex",
-
-            alignItems:
-              "center",
-
-            justifyContent:
-              "center",
-
-            gap: "10px"
+              "24px"
           }}
         >
           <Volume2
@@ -385,15 +378,9 @@ export default function LearnScreen({
         </button>
 
         <div
+          className="glass-card"
           style={{
             padding: "22px",
-
-            borderRadius:
-              "24px",
-
-            background:
-              "rgba(255,255,255,0.05)",
-
             marginBottom:
               "28px"
           }}
@@ -401,10 +388,7 @@ export default function LearnScreen({
           <h3
             style={{
               marginBottom:
-                "14px",
-
-              fontSize:
-                "18px"
+                "14px"
             }}
           >
             Hindi Translation
@@ -412,18 +396,10 @@ export default function LearnScreen({
 
           <p
             style={{
-              color:
-                "rgba(255,255,255,0.84)",
-
-              lineHeight:
-                1.9,
-
-              fontSize:
-                "18px"
+              lineHeight: 1.8
             }}
           >
-            {lesson.hindi ||
-              lesson.translation}
+            {lesson.hindi}
           </p>
         </div>
 
@@ -436,10 +412,7 @@ export default function LearnScreen({
           <h3
             style={{
               marginBottom:
-                "18px",
-
-              fontSize:
-                "22px"
+                "18px"
             }}
           >
             Vocabulary
@@ -449,7 +422,6 @@ export default function LearnScreen({
             style={{
               display:
                 "grid",
-
               gap: "16px"
             }}
           >
@@ -467,83 +439,18 @@ export default function LearnScreen({
                       "20px"
                   }}
                 >
-                  <div
-                    style={{
-                      display:
-                        "flex",
-
-                      justifyContent:
-                        "space-between",
-
-                      alignItems:
-                        "center",
-
-                      gap: "12px",
-
-                      marginBottom:
-                        "12px"
-                    }}
-                  >
-                    <h4
-                      style={{
-                        fontSize:
-                          "20px"
-                      }}
-                    >
-                      {
-                        item.word
-                      }
-                    </h4>
-
-                    <button
-                      onClick={() =>
-                        speakText(
-                          item.word
-                        )
-                      }
-                      style={{
-                        width:
-                          "42px",
-
-                        height:
-                          "42px",
-
-                        borderRadius:
-                          "14px",
-
-                        background:
-                          "rgba(255,255,255,0.06)",
-
-                        color:
-                          "#ffffff",
-
-                        display:
-                          "flex",
-
-                        alignItems:
-                          "center",
-
-                        justifyContent:
-                          "center"
-                      }}
-                    >
-                      <Volume2
-                        size={
-                          18
-                        }
-                      />
-                    </button>
-                  </div>
-
-                  <p
+                  <h4
                     style={{
                       marginBottom:
-                        "10px",
-
-                      color:
-                        "rgba(255,255,255,0.86)"
+                        "10px"
                     }}
                   >
+                    {
+                      item.word
+                    }
+                  </h4>
+
+                  <p>
                     Meaning:
                     {" "}
                     {
@@ -551,12 +458,7 @@ export default function LearnScreen({
                     }
                   </p>
 
-                  <p
-                    style={{
-                      color:
-                        "rgba(255,255,255,0.68)"
-                    }}
-                  >
+                  <p>
                     Pronunciation:
                     {" "}
                     {
@@ -572,122 +474,30 @@ export default function LearnScreen({
         <div
           className="glass-card"
           style={{
-            padding: "24px",
-
-            marginBottom:
-              "30px",
-
-            background:
-              "linear-gradient(90deg, rgba(147,51,234,0.12), rgba(37,99,235,0.12))"
-          }}
-        >
-          <div
-            style={{
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap: "12px",
-
-              marginBottom:
-                "14px"
-            }}
-          >
-            <RotateCcw
-              size={22}
-            />
-
-            <h3
-              style={{
-                fontSize:
-                  "22px"
-              }}
-            >
-              Repeat Practice
-            </h3>
-          </div>
-
-          <p
-            style={{
-              color:
-                "rgba(255,255,255,0.75)",
-
-              lineHeight:
-                1.8,
-
-              marginBottom:
-                "20px"
-            }}
-          >
-            Listen carefully and repeat the
-            sentence loudly to improve fluency
-            and confidence.
-          </p>
-
-          <button
-            className="secondary-button"
-            onClick={() =>
-              speakText(
-                lesson.english ||
-                  lesson.sentence ||
-                  ""
-              )
-            }
-          >
-            Repeat Sentence
-          </button>
-        </div>
-
-        <div
-          className="glass-card"
-          style={{
             padding: "22px",
-
             background:
-              "rgba(34,197,94,0.12)",
-
-            border:
-              "1px solid rgba(34,197,94,0.18)"
+              "rgba(34,197,94,0.12)"
           }}
         >
           <div
             style={{
               display:
                 "flex",
-
-              alignItems:
-                "center",
-
               gap: "12px"
             }}
           >
             <CheckCircle2
-              size={24}
+              size={22}
             />
 
             <div>
-              <h3
-                style={{
-                  marginBottom:
-                    "4px"
-                }}
-              >
+              <h3>
                 Practice Tip
               </h3>
 
-              <p
-                style={{
-                  color:
-                    "rgba(255,255,255,0.72)",
-
-                  lineHeight:
-                    1.7
-                }}
-              >
-                Speak slowly and clearly
-                instead of speaking fast.
+              <p>
+                {lesson.pronunciationTip ||
+                  "Speak naturally and confidently."}
               </p>
             </div>
           </div>
@@ -695,114 +505,26 @@ export default function LearnScreen({
       </section>
 
       <section
-        className="fade-in"
         style={{
-          marginTop: "28px",
-
-          display: "grid",
-
-          gridTemplateColumns:
-            "1fr 1fr",
-
-          gap: "14px"
+          marginTop: "28px"
         }}
       >
-        <button
-          className="secondary-button"
-          onClick={
-            previousLesson
-          }
-          disabled={
-            currentIndex ===
-            0
-          }
-          style={{
-            opacity:
-              currentIndex ===
-              0
-                ? 0.5
-                : 1
-          }}
-        >
-          Previous
-        </button>
-
         <button
           className="primary-button"
           onClick={
-            nextLesson
-          }
-          disabled={
-            currentIndex ===
-            lessons.length -
-              1
+            fetchLesson
           }
           style={{
-            opacity:
-              currentIndex ===
-              lessons.length -
-                1
-                ? 0.5
-                : 1
-          }}
-        >
-          Next Lesson
-        </button>
-      </section>
-
-      <section
-        className="glass-card fade-in"
-        style={{
-          padding: "24px",
-
-          marginTop: "28px",
-
-          background:
-            "linear-gradient(90deg, rgba(147,51,234,0.14), rgba(37,99,235,0.14))"
-        }}
-      >
-        <div
-          style={{
-            display:
-              "flex",
-
-            alignItems:
-              "center",
-
-            gap: "12px",
-
-            marginBottom:
-              "14px"
+            width: "100%"
           }}
         >
           <Sparkles
-            size={22}
+            size={20}
           />
 
-          <h2
-            style={{
-              fontSize:
-                "24px"
-            }}
-          >
-            AI Learning
-          </h2>
-        </div>
-
-        <p
-          style={{
-            color:
-              "rgba(255,255,255,0.76)",
-
-            lineHeight: 1.8
-          }}
-        >
-          FluentPro AI dynamically adapts
-          lessons for daily communication,
-          office English, interviews, and
-          professional speaking confidence.
-        </p>
+          Generate New AI Lesson
+        </button>
       </section>
     </main>
   );
-        }
+}
