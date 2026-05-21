@@ -9,6 +9,10 @@ type GeminiResponse = {
       }[];
     };
   }[];
+
+  error?: {
+    message?: string;
+  };
 };
 
 export type GenerateAIReplyParams = {
@@ -25,17 +29,17 @@ export type GenerateAIReplyParams = {
 const SYSTEM_PROMPT = `
 You are FluentPro AI.
 
-You help Indian users improve spoken English fluency.
+You help Indian users improve spoken English fluency naturally.
 
 Rules:
-- Always reply in simple and natural English.
-- Keep responses short and conversational.
-- Encourage the learner confidently.
-- Correct indirectly without sounding strict.
-- Focus on professional, business, and daily English.
-- Avoid complex grammar explanations unless asked.
+- Speak in very natural conversational English.
+- Keep replies short and realistic.
+- Reply like a friendly Indian English trainer.
+- Ask follow-up questions naturally.
+- Avoid robotic replies.
+- Never repeat the same sentence.
 - Never use markdown.
-- Keep replies under 80 words.
+- Keep replies under 60 words.
 `;
 
 function buildConversationPrompt(
@@ -46,20 +50,23 @@ function buildConversationPrompt(
   }[]
 ) {
   const formattedHistory =
-    history?.map((item) => {
-      const role =
-        item.role === "user"
-          ? "User"
-          : "AI";
+    history
+      ?.slice(-10)
+      .map((item) => {
+        const role =
+          item.role === "user"
+            ? "User"
+            : "AI";
 
-      return `${role}: ${item.text}`;
-    }) || [];
+        return `${role}: ${item.text}`;
+      })
+      .join("\n") || "";
 
   return `
 ${SYSTEM_PROMPT}
 
-Conversation:
-${formattedHistory.join("\n")}
+Previous Conversation:
+${formattedHistory}
 
 User: ${message}
 
@@ -73,10 +80,12 @@ export async function generateAIReply({
   conversationHistory = []
 }: GenerateAIReplyParams): Promise<string> {
   try {
-    if (!apiKey) {
-      throw new Error(
-        "Gemini API key is missing."
+    if (!apiKey?.trim()) {
+      console.error(
+        "Gemini API key missing"
       );
+
+      return "AI setup is incomplete. Please add Gemini API key.";
     }
 
     const prompt =
@@ -98,6 +107,8 @@ export async function generateAIReply({
         body: JSON.stringify({
           contents: [
             {
+              role: "user",
+
               parts: [
                 {
                   text: prompt
@@ -107,39 +118,83 @@ export async function generateAIReply({
           ],
 
           generationConfig: {
-            temperature: 0.8,
-            topK: 32,
+            temperature: 0.9,
             topP: 1,
+            topK: 40,
             maxOutputTokens: 120
-          }
+          },
+
+          safetySettings: [
+            {
+              category:
+                "HARM_CATEGORY_HARASSMENT",
+              threshold:
+                "BLOCK_NONE"
+            },
+
+            {
+              category:
+                "HARM_CATEGORY_HATE_SPEECH",
+              threshold:
+                "BLOCK_NONE"
+            },
+
+            {
+              category:
+                "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold:
+                "BLOCK_NONE"
+            },
+
+            {
+              category:
+                "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold:
+                "BLOCK_NONE"
+            }
+          ]
         })
       }
     );
 
-    if (!response.ok) {
-      throw new Error(
-        "Failed to fetch AI response."
-      );
-    }
-
     const data: GeminiResponse =
       await response.json();
+
+    console.log(
+      "Gemini Response:",
+      data
+    );
+
+    if (!response.ok) {
+      console.error(
+        "Gemini API Error:",
+        data?.error?.message
+      );
+
+      return "AI server error. Please try again.";
+    }
 
     const reply =
       data?.candidates?.[0]?.content
         ?.parts?.[0]?.text;
 
-    if (!reply) {
-      return "I am here to help you practice English. Please try again.";
+    if (
+      !reply ||
+      reply.trim().length === 0
+    ) {
+      return "Can you tell me more about that?";
     }
 
-    return reply.trim();
+    return reply
+      .replace(/\*/g, "")
+      .replace(/\n+/g, " ")
+      .trim();
   } catch (error) {
     console.error(
-      "Gemini AI Error:",
+      "Gemini AI Fatal Error:",
       error
     );
 
-    return "Sorry, I could not respond right now. Please try again.";
+    return "Connection issue. Please try again.";
   }
 }
