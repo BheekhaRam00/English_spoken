@@ -27,6 +27,13 @@ export type SpeakTextOptions =
 let voicesLoaded =
   false;
 
+let activeUtterance:
+  | SpeechSynthesisUtterance
+  | null = null;
+
+let speaking =
+  false;
+
 function loadVoices() {
   if (
     typeof window ===
@@ -41,6 +48,9 @@ function loadVoices() {
   let voices =
     synth.getVoices();
 
+  /*
+  MOBILE FIX
+  */
   if (
     voices.length === 0 &&
     !voicesLoaded
@@ -49,7 +59,8 @@ function loadVoices() {
 
     synth.onvoiceschanged =
       () => {
-        synth.getVoices();
+        voices =
+          synth.getVoices();
       };
   }
 
@@ -69,49 +80,61 @@ function findBestVoice(
     return null;
   }
 
-  const indianVoices =
+  /*
+  PRIORITY:
+  1. English India
+  2. English US/UK
+  */
+
+  const englishVoices =
     voices.filter(
       (voice) =>
         voice.lang
           .toLowerCase()
           .includes(
-            "en-in"
-          ) ||
+            "en"
+          )
+    );
+
+  const indianVoices =
+    englishVoices.filter(
+      (voice) =>
         voice.lang
           .toLowerCase()
           .includes(
-            "hi-in"
+            "in"
           )
     );
 
   const preferredVoices =
     indianVoices.length
       ? indianVoices
-      : voices;
+      : englishVoices;
 
   const femalePriority =
     [
-      "Microsoft Heera",
-      "Microsoft Swara",
-      "Google हिन्दी",
-      "Google UK English Female",
-      "Samantha"
+      "heera",
+      "swara",
+      "female",
+      "samantha",
+      "zira"
     ];
 
   const malePriority =
     [
-      "Microsoft Prabhat",
-      "Google UK English Male",
-      "Daniel",
-      "Alex"
+      "prabhat",
+      "male",
+      "daniel",
+      "alex",
+      "david"
     ];
 
   const professionalPriority =
     [
-      "Microsoft Heera",
-      "Microsoft Prabhat",
-      "Google UK English Female",
-      "Google UK English Male"
+      "google",
+      "microsoft",
+      "zira",
+      "daniel"
     ];
 
   let priorities:
@@ -138,9 +161,11 @@ function findBestVoice(
     const matched =
       preferredVoices.find(
         (voice) =>
-          voice.name.includes(
-            name
-          )
+          voice.name
+            .toLowerCase()
+            .includes(
+              name
+            )
       );
 
     if (matched) {
@@ -150,8 +175,24 @@ function findBestVoice(
 
   return (
     preferredVoices[0] ||
+    voices[0] ||
     null
   );
+}
+
+function cleanSpeechText(
+  text: string
+) {
+  return text
+    .replace(
+      /\s+/g,
+      " "
+    )
+    .replace(
+      /\n+/g,
+      ". "
+    )
+    .trim();
 }
 
 export function speakText({
@@ -196,15 +237,42 @@ export function speakText({
       return;
     }
 
+    const cleanedText =
+      cleanSpeechText(
+        text
+      );
+
+    if (
+      !cleanedText
+    ) {
+      return;
+    }
+
     const synth =
       window.speechSynthesis;
 
+    /*
+    HARD RESET
+    PREVENT:
+    - overlap
+    - double voice
+    - stuck speech
+    */
     synth.cancel();
+
+    speaking =
+      false;
+
+    activeUtterance =
+      null;
 
     const utterance =
       new SpeechSynthesisUtterance(
-        text
+        cleanedText
       );
+
+    activeUtterance =
+      utterance;
 
     utterance.lang =
       language;
@@ -212,30 +280,34 @@ export function speakText({
     utterance.volume =
       volume;
 
+    /*
+    NATURAL SETTINGS
+    */
+
     if (
       voiceType ===
       "female"
     ) {
       utterance.rate =
-        rate ?? 0.92;
+        rate ?? 0.93;
 
       utterance.pitch =
-        pitch ?? 1;
+        pitch ?? 1.02;
     } else if (
       voiceType ===
       "male"
     ) {
       utterance.rate =
-        rate ?? 0.88;
-
-      utterance.pitch =
-        pitch ?? 0.92;
-    } else {
-      utterance.rate =
         rate ?? 0.9;
 
       utterance.pitch =
-        pitch ?? 0.96;
+        pitch ?? 0.94;
+    } else {
+      utterance.rate =
+        rate ?? 0.91;
+
+      utterance.pitch =
+        pitch ?? 0.98;
     }
 
     const selectedVoice =
@@ -252,26 +324,62 @@ export function speakText({
 
     utterance.onstart =
       () => {
+        speaking =
+          true;
+
         onStart?.();
       };
 
     utterance.onend =
       () => {
+        speaking =
+          false;
+
+        activeUtterance =
+          null;
+
         onEnd?.();
       };
 
     utterance.onerror =
-      () => {
+      (
+        event
+      ) => {
+        speaking =
+          false;
+
+        activeUtterance =
+          null;
+
+        /*
+        IGNORE SAFE ERRORS
+        */
+        if (
+          event.error ===
+          "interrupted"
+        ) {
+          return;
+        }
+
         onError?.(
           "Voice playback failed."
         );
       };
 
+    /*
+    MOBILE ANDROID FIX
+    */
     setTimeout(() => {
-      synth.speak(
-        utterance
-      );
-    }, 80);
+      try {
+        synth.speak(
+          utterance
+        );
+      } catch (error) {
+        onError?.(
+          "Unable to play voice."
+        );
+      }
+    }, 120);
   } catch (error) {
     console.error(
       "Speech Synthesis Error:",
@@ -285,36 +393,67 @@ export function speakText({
 }
 
 export function stopSpeaking() {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return;
-  }
+  try {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return;
+    }
 
-  window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel();
+
+    speaking =
+      false;
+
+    activeUtterance =
+      null;
+  } catch (error) {
+    console.error(
+      "Stop Speaking Error:",
+      error
+    );
+  }
 }
 
 export function pauseSpeaking() {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return;
-  }
+  try {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return;
+    }
 
-  window.speechSynthesis.pause();
+    window.speechSynthesis.pause();
+  } catch (error) {
+    console.error(
+      "Pause Speaking Error:",
+      error
+    );
+  }
 }
 
 export function resumeSpeaking() {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return;
-  }
+  try {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return;
+    }
 
-  window.speechSynthesis.resume();
+    window.speechSynthesis.resume();
+  } catch (error) {
+    console.error(
+      "Resume Speaking Error:",
+      error
+    );
+  }
+}
+
+export function isSpeaking() {
+  return speaking;
 }
 
 export function getAvailableVoices() {
