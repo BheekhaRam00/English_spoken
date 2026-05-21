@@ -42,10 +42,10 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 const PRIMARY_MODEL =
-  "google/gemma-2-9b-it:free";
+  "openai/gpt-oss-20b:free";
 
 const FALLBACK_MODEL =
-  "meta-llama/llama-3.2-3b-instruct:free";
+  "moonshotai/kimi-dev-72b:free";
 
 async function makeRequest({
   apiKey,
