@@ -15,6 +15,14 @@ type GenerateLessonParams = {
     | "advanced";
 };
 
+type VocabularyItem = {
+  word: string;
+
+  meaning: string;
+
+  pronunciation: string;
+};
+
 type LessonResponse = {
   title: string;
 
@@ -22,45 +30,63 @@ type LessonResponse = {
 
   hindi: string;
 
-  vocabulary: {
-    word: string;
-    meaning: string;
-    pronunciation: string;
-  }[];
+  vocabulary: VocabularyItem[];
 
   pronunciationTip: string;
+};
+
+type OpenRouterResponse = {
+  choices?: {
+    message?: {
+      content?: string;
+    };
+  }[];
+
+  error?: {
+    message?: string;
+  };
 };
 
 const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 /*
-WORKING FAST MODELS
+STABLE FAST FREE MODELS
 */
 const MODELS = [
-  "google/gemma-2-9b-it:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "qwen/qwen3-32b:free"
+  "deepseek/deepseek-chat-v3-0324:free",
+  "microsoft/phi-3-mini-128k-instruct:free",
+  "nousresearch/hermes-3-llama-3.1-8b:free"
 ];
 
 function buildLessonPrompt(
   mode: string
 ) {
   return `
-Generate a SHORT spoken English lesson.
+Generate ONE spoken English lesson for Indian learners.
 
-Mode: ${mode}
+MODE:
+${mode}
 
-RULES:
-- Only 4 to 6 short sentences.
+STRICT RULES:
+- ONLY 4 to 6 short spoken English sentences.
+- Every sentence MUST be on a NEW LINE.
 - Very easy English.
-- One sentence per line.
-- Daily spoken style.
-- No paragraph.
-- No long explanation.
+- Natural real-life conversation.
+- NO paragraph.
+- NO explanation.
+- NO markdown.
+- NO headings inside english text.
+- Hindi translation line-by-line.
+- Add 4 useful vocabulary words only.
+- Output STRICT VALID JSON ONLY.
 
-Return ONLY valid JSON.
+EXAMPLE ENGLISH:
+Hello.
+How are you?
+I am fine.
 
+JSON FORMAT:
 {
   "title": "",
   "english": "",
@@ -82,52 +108,144 @@ async function requestLesson(
   model: string,
   prompt: string
 ) {
-  const response =
-    await fetch(
-      OPENROUTER_URL,
-      {
-        method: "POST",
+  const controller =
+    new AbortController();
 
-        headers: {
-          Authorization:
-            `Bearer ${apiKey}`,
+  const timeout =
+    setTimeout(() => {
+      controller.abort();
+    }, 12000);
 
-          "Content-Type":
-            "application/json"
-        },
+  try {
+    const response =
+      await fetch(
+        OPENROUTER_URL,
+        {
+          method: "POST",
 
-        body: JSON.stringify({
-          model,
+          signal:
+            controller.signal,
 
-          temperature: 0.5,
+          headers: {
+            Authorization:
+              `Bearer ${apiKey}`,
 
-          max_tokens: 300,
+            "Content-Type":
+              "application/json",
 
-          messages: [
-            {
-              role: "user",
+            "HTTP-Referer":
+              "https://fluentpro-ai.vercel.app",
 
-              content:
-                prompt
-            }
-          ]
-        })
-      }
-    );
+            "X-Title":
+              "FluentPro AI"
+          },
 
-  const data =
-    await response.json();
+          body: JSON.stringify({
+            model,
 
-  if (!response.ok) {
-    throw new Error(
-      data?.error
-        ?.message ||
-        "Model failed"
-    );
+            temperature: 0.8,
+
+            top_p: 0.9,
+
+            frequency_penalty: 0.2,
+
+            presence_penalty: 0.2,
+
+            max_tokens: 220,
+
+            messages: [
+              {
+                role: "system",
+
+                content:
+                  "You are a spoken English lesson generator."
+              },
+
+              {
+                role: "user",
+
+                content:
+                  prompt
+              }
+            ]
+          })
+        }
+      );
+
+    const data:
+      OpenRouterResponse =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error
+          ?.message ||
+          `Provider failed for ${model}`
+      );
+    }
+
+    const content =
+      data?.choices?.[0]
+        ?.message?.content;
+
+    if (
+      !content ||
+      typeof content !==
+        "string"
+    ) {
+      throw new Error(
+        `Empty AI response from ${model}`
+      );
+    }
+
+    return content;
+  } finally {
+    clearTimeout(timeout);
   }
+}
 
-  return data?.choices?.[0]
-    ?.message?.content;
+function sanitizeLesson(
+  lesson: LessonResponse
+): LessonResponse {
+  const english =
+    lesson.english
+      ?.split("\n")
+      .map((line) =>
+        line.trim()
+      )
+      .filter(Boolean)
+      .slice(0, 6)
+      .join("\n");
+
+  const hindi =
+    lesson.hindi
+      ?.split("\n")
+      .map((line) =>
+        line.trim()
+      )
+      .filter(Boolean)
+      .slice(0, 6)
+      .join("\n");
+
+  return {
+    title:
+      lesson.title ||
+      "English Practice",
+
+    english,
+
+    hindi,
+
+    vocabulary:
+      lesson.vocabulary?.slice(
+        0,
+        4
+      ) || [],
+
+    pronunciationTip:
+      lesson.pronunciationTip ||
+      "Speak slowly and confidently."
+  };
 }
 
 function parseLesson(
@@ -165,8 +283,20 @@ function parseLesson(
         jsonEnd + 1
       );
 
-    return JSON.parse(
-      jsonString
+    const parsed =
+      JSON.parse(
+        jsonString
+      ) as LessonResponse;
+
+    if (
+      !parsed?.english ||
+      !parsed?.hindi
+    ) {
+      return null;
+    }
+
+    return sanitizeLesson(
+      parsed
     );
   } catch (error) {
     logError(
@@ -182,6 +312,17 @@ function generateFallbackLesson(
   mode: string
 ): LessonResponse {
   const lessons = {
+    beginner: {
+      title:
+        "Beginner English",
+
+      english:
+        "Hello.\nMy name is Rahul.\nI am learning English.\nI practice every day.\nEnglish is important.",
+
+      hindi:
+        "हेलो।\nमेरा नाम राहुल है।\nमैं अंग्रेजी सीख रहा हूँ।\nमैं रोज अभ्यास करता हूँ।\nअंग्रेजी महत्वपूर्ण है।"
+    },
+
     daily: {
       title:
         "Daily English Practice",
@@ -193,15 +334,26 @@ function generateFallbackLesson(
         "हेलो।\nआप कैसे हैं?\nमैं ठीक हूँ।\nआप आज क्या कर रहे हैं?\nमैं काम पर जा रहा हूँ।"
     },
 
-    business: {
+    office: {
       title:
-        "Business Meeting",
+        "Office English",
 
       english:
-        "Good morning.\nThe meeting starts at 10 AM.\nPlease send the report.\nI will check the email.\nThank you.",
+        "Good morning.\nPlease check the email.\nThe meeting starts now.\nI will finish the report.\nThank you.",
 
       hindi:
-        "सुप्रभात।\nमीटिंग 10 बजे शुरू होती है।\nकृपया रिपोर्ट भेजें।\nमैं ईमेल चेक करूंगा।\nधन्यवाद।"
+        "सुप्रभात।\nकृपया ईमेल चेक करें।\nमीटिंग अब शुरू होती है।\nमैं रिपोर्ट पूरी कर दूंगा।\nधन्यवाद।"
+    },
+
+    business: {
+      title:
+        "Business English",
+
+      english:
+        "Welcome to the meeting.\nLet's discuss the project.\nPlease share your ideas.\nWe need better results.\nThank you everyone.",
+
+      hindi:
+        "मीटिंग में आपका स्वागत है।\nआइए प्रोजेक्ट पर चर्चा करें।\nकृपया अपने विचार साझा करें।\nहमें बेहतर परिणाम चाहिए।\nसभी का धन्यवाद।"
     },
 
     interview: {
@@ -209,10 +361,32 @@ function generateFallbackLesson(
         "Interview Practice",
 
       english:
-        "Tell me about yourself.\nI am a hardworking person.\nI like learning new skills.\nI can work in a team.\nThank you.",
+        "Tell me about yourself.\nI am a hardworking person.\nI enjoy learning new skills.\nI can work in a team.\nThank you for this opportunity.",
 
       hindi:
-        "अपने बारे में बताइए।\nमैं मेहनती व्यक्ति हूँ।\nमुझे नई चीजें सीखना पसंद है।\nमैं टीम में काम कर सकता हूँ।\nधन्यवाद।"
+        "अपने बारे में बताइए।\nमैं मेहनती व्यक्ति हूँ।\nमुझे नई चीजें सीखना पसंद है।\nमैं टीम में काम कर सकता हूँ।\nइस अवसर के लिए धन्यवाद।"
+    },
+
+    pronunciation: {
+      title:
+        "Pronunciation Practice",
+
+      english:
+        "Please speak slowly.\nRepeat the sentence clearly.\nFocus on every word.\nPractice improves fluency.\nConfidence is important.",
+
+      hindi:
+        "कृपया धीरे बोलें।\nवाक्य को स्पष्ट रूप से दोहराएँ।\nहर शब्द पर ध्यान दें।\nअभ्यास से सुधार होता है।\nआत्मविश्वास महत्वपूर्ण है।"
+    },
+
+    advanced: {
+      title:
+        "Advanced English",
+
+      english:
+        "I would like to discuss the proposal.\nYour presentation was impressive.\nWe should improve communication.\nLet's finalize the strategy today.\nThank you for your support.",
+
+      hindi:
+        "मैं प्रस्ताव पर चर्चा करना चाहूँगा।\nआपकी प्रस्तुति प्रभावशाली थी।\nहमें संचार सुधारना चाहिए।\nआइए आज रणनीति अंतिम करें।\nआपके सहयोग के लिए धन्यवाद।"
     }
   };
 
@@ -235,13 +409,13 @@ function generateFallbackLesson(
     vocabulary: [
       {
         word:
-          "Hello",
+          "Practice",
 
         meaning:
-          "नमस्ते",
+          "अभ्यास",
 
         pronunciation:
-          "हैलो"
+          "प्रैक्टिस"
       },
 
       {
@@ -253,6 +427,28 @@ function generateFallbackLesson(
 
         pronunciation:
           "वर्क"
+      },
+
+      {
+        word:
+          "Meeting",
+
+        meaning:
+          "बैठक",
+
+        pronunciation:
+          "मीटिंग"
+      },
+
+      {
+        word:
+          "Confidence",
+
+        meaning:
+          "आत्मविश्वास",
+
+        pronunciation:
+          "कॉन्फिडेंस"
       }
     ],
 
