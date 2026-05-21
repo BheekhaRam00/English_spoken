@@ -45,7 +45,7 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 const PRIMARY_MODEL =
-  "mistralai/mistral-7b-instruct:free";
+  "google/gemma-2-9b-it:free";
 
 const FALLBACK_MODEL =
   "meta-llama/llama-3.2-3b-instruct:free";
