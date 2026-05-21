@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useState
+} from "react";
 
 import {
   continueConversation,
@@ -15,16 +18,10 @@ import {
 } from "@/types";
 
 import {
-  generateId
-} from "@/utils/helpers";
-
-import {
   speakText
 } from "@/services/speech/speechSynthesis";
 
 type UseConversationOptions = {
-  apiKey?: string;
-
   mode?: AIConversationMode;
 
   autoSpeak?: boolean;
@@ -33,8 +30,6 @@ type UseConversationOptions = {
 };
 
 export default function useConversation({
-  apiKey = "",
-
   mode = "daily",
 
   autoSpeak = true,
@@ -42,9 +37,9 @@ export default function useConversation({
   voiceType = "female"
 }: UseConversationOptions = {}) {
   const [messages, setMessages] =
-    useState<ConversationMessage[]>(
-      []
-    );
+    useState<
+      ConversationMessage[]
+    >([]);
 
   const [loading, setLoading] =
     useState(false);
@@ -132,32 +127,30 @@ export default function useConversation({
               cleaned
             );
 
-          if (apiKey) {
-            aiReply =
-              await continueConversation(
-                {
-                  userMessage:
-                    cleaned,
+          aiReply =
+            await continueConversation(
+              {
+                userMessage:
+                  cleaned,
 
-                  apiKey,
+                history: [
+                  ...messages,
+                  userMessage
+                ].map(
+                  (
+                    message
+                  ) => ({
+                    role:
+                      message.role,
 
-                  history: [
-                    ...messages,
-                    userMessage
-                  ].map(
-                    (message) => ({
-                      role:
-                        message.role,
+                    text:
+                      message.text
+                  })
+                ),
 
-                      text:
-                        message.text
-                    })
-                  ),
-
-                  mode
-                }
-              );
-          }
+                mode
+              }
+            );
 
           const aiMessage: ConversationMessage =
             {
@@ -192,15 +185,37 @@ export default function useConversation({
             conversationError
           );
 
+          const fallbackReply =
+            generateFallbackReply(
+              cleaned
+            );
+
+          const fallbackMessage: ConversationMessage =
+            {
+              id:
+                Date.now() + 1,
+
+              role: "ai",
+
+              text: fallbackReply,
+
+              createdAt:
+                new Date().toISOString()
+            };
+
+          setMessages((prev) => [
+            ...prev,
+            fallbackMessage
+          ]);
+
           setError(
-            "Unable to continue conversation."
+            "AI response temporarily unavailable."
           );
         } finally {
           setLoading(false);
         }
       },
       [
-        apiKey,
         autoSpeak,
         messages,
         mode,
@@ -273,4 +288,4 @@ export default function useConversation({
 
     getLastMessage
   };
-            }
+}
