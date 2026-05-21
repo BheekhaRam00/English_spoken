@@ -38,6 +38,9 @@ let recognition:
 let recognitionActive =
   false;
 
+let manuallyStopped =
+  false;
+
 function getRecognitionClass() {
   if (
     typeof window ===
@@ -55,6 +58,22 @@ function getRecognitionClass() {
   );
 }
 
+function cleanupRecognition() {
+  if (recognition) {
+    recognition.onstart =
+      null;
+
+    recognition.onend =
+      null;
+
+    recognition.onerror =
+      null;
+
+    recognition.onresult =
+      null;
+  }
+}
+
 export function startSpeechRecognition({
   language =
     "en-US",
@@ -63,7 +82,7 @@ export function startSpeechRecognition({
     false,
 
   interimResults =
-    true,
+    false,
 
   onStart,
 
@@ -81,23 +100,37 @@ export function startSpeechRecognition({
       !Recognition
     ) {
       onError?.(
-        "Speech recognition is not supported in this browser."
+        "Speech recognition is not supported on this device."
       );
 
       return;
     }
 
+    /*
+    PREVENT DUPLICATE INSTANCES
+    */
     if (
       recognitionActive &&
       recognition
     ) {
-      recognition.stop();
+      try {
+        manuallyStopped =
+          true;
 
-      recognition = null;
+        recognition.stop();
+      } catch {}
+
+      cleanupRecognition();
+
+      recognition =
+        null;
 
       recognitionActive =
         false;
     }
+
+    manuallyStopped =
+      false;
 
     recognition =
       new Recognition();
@@ -105,6 +138,9 @@ export function startSpeechRecognition({
     recognition.lang =
       language;
 
+    /*
+    MOBILE STABLE SETTINGS
+    */
     recognition.continuous =
       continuous;
 
@@ -127,6 +163,23 @@ export function startSpeechRecognition({
         recognitionActive =
           false;
 
+        cleanupRecognition();
+
+        recognition =
+          null;
+
+        /*
+        IGNORE MANUAL STOP
+        */
+        if (
+          manuallyStopped
+        ) {
+          manuallyStopped =
+            false;
+
+          return;
+        }
+
         onEnd?.();
       };
 
@@ -141,6 +194,18 @@ export function startSpeechRecognition({
           event?.error ||
           "Speech recognition failed.";
 
+        /*
+        IGNORE SAFE ERRORS
+        */
+        if (
+          errorMessage ===
+            "aborted" ||
+          errorMessage ===
+            "no-speech"
+        ) {
+          return;
+        }
+
         onError?.(
           errorMessage
         );
@@ -151,11 +216,15 @@ export function startSpeechRecognition({
         event: any
       ) => {
         try {
-          let finalTranscript =
+          let transcript =
             "";
 
+          /*
+          ONLY PROCESS NEW RESULTS
+          */
           for (
-            let i = 0;
+            let i =
+              event.resultIndex;
             i <
             event.results
               .length;
@@ -169,17 +238,27 @@ export function startSpeechRecognition({
             if (
               result.isFinal
             ) {
-              finalTranscript +=
+              transcript +=
                 result[0]
                   .transcript;
             }
           }
 
           const cleanedTranscript =
-            finalTranscript.trim();
+            transcript
+              .replace(
+                /\s+/g,
+                " "
+              )
+              .trim();
 
+          /*
+          FILTER VERY SHORT NOISE
+          */
           if (
+            cleanedTranscript &&
             cleanedTranscript
+              .length > 1
           ) {
             onResult?.(
               cleanedTranscript
@@ -190,7 +269,7 @@ export function startSpeechRecognition({
             error instanceof
               Error
               ? error
-              : "Unable to process speech recognition result."
+              : "Unable to process speech result."
           );
         }
       };
@@ -199,6 +278,11 @@ export function startSpeechRecognition({
   } catch (error) {
     recognitionActive =
       false;
+
+    cleanupRecognition();
+
+    recognition =
+      null;
 
     onError?.(
       error instanceof
@@ -211,10 +295,15 @@ export function startSpeechRecognition({
 
 export function stopSpeechRecognition() {
   try {
+    manuallyStopped =
+      true;
+
     if (
       recognition
     ) {
       recognition.stop();
+
+      cleanupRecognition();
 
       recognition =
         null;
