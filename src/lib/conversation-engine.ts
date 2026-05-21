@@ -16,6 +16,8 @@ import {
 
 export type ConversationEngineConfig =
   {
+    apiKey?: string;
+
     mode?: AIConversationMode;
 
     voiceType?: VoiceType;
