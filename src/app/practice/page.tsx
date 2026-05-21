@@ -30,13 +30,10 @@ export default function PracticePage() {
   const [engine] = useState(
     () =>
       new AudioCallEngine({
-        apiKey:
-          process.env
-            .NEXT_PUBLIC_OPENROUTER_API_KEY || "",
-
         mode: "daily",
 
-        voiceType: "female",
+        voiceType:
+          "female",
 
         autoSpeak: true
       })
@@ -59,7 +56,9 @@ export default function PracticePage() {
       <PracticeScreen
         engine={engine}
         mode={mode}
-        voiceType={voiceType}
+        voiceType={
+          voiceType
+        }
         onModeChange={
           setMode
         }
