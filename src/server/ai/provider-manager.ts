@@ -1,14 +1,19 @@
-import { callOpenRouter }
-  from "@/server/ai/providers/openrouter";
+import {
+  callOpenRouter
+} from "@/server/ai/providers/openrouter";
 
-import { callMockProvider }
-  from "@/server/ai/providers/mock";
+import {
+  callMockProvider
+} from "@/server/ai/providers/mock";
 
-import { cleanAIText }
-  from "@/server/utils/text";
+import {
+  cleanAIText
+} from "@/server/utils/text";
 
-import { logError }
-  from "@/server/utils/logger";
+import {
+  logError,
+  logInfo
+} from "@/server/utils/logger";
 
 type RequestAICompletionParams =
   {
@@ -29,6 +34,19 @@ type RequestAICompletionParams =
     apiKey: string;
   };
 
+function normalizeReply(
+  text: string
+) {
+  return cleanAIText(
+    text
+  )
+    .replace(
+      /\n{3,}/g,
+      "\n\n"
+    )
+    .trim();
+}
+
 export async function requestAICompletion({
   message,
   history,
@@ -36,6 +54,9 @@ export async function requestAICompletion({
   apiKey
 }: RequestAICompletionParams) {
   try {
+    /*
+    OPENROUTER AI
+    */
     const openRouterReply =
       await callOpenRouter({
         apiKey,
@@ -48,30 +69,49 @@ export async function requestAICompletion({
       });
 
     const cleanedReply =
-      cleanAIText(
+      normalizeReply(
         openRouterReply
-      )
-        .replace(/\n+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      );
 
-    if (!cleanedReply) {
+    /*
+    EMPTY CHECK
+    */
+    if (
+      !cleanedReply ||
+      cleanedReply.length <
+        2
+    ) {
       throw new Error(
         "Empty AI response."
       );
     }
 
+    logInfo(
+      `AI response generated successfully.`
+    );
+
     return cleanedReply;
   } catch (error) {
+    /*
+    AI FAILED
+    */
     logError(
       "OpenRouter Provider Failed",
       error
     );
 
-    return callMockProvider({
-      message,
+    /*
+    FALLBACK
+    */
+    const fallbackReply =
+      callMockProvider({
+        message,
 
-      mode
-    });
+        mode
+      });
+
+    return normalizeReply(
+      fallbackReply
+    );
   }
 }
