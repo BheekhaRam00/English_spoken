@@ -27,18 +27,66 @@ export type GenerateAIReplyParams = {
 const SYSTEM_PROMPT = `
 You are FluentPro AI.
 
-You help Indian users improve spoken English fluency naturally.
+You are a highly natural spoken English conversation trainer for Indian users.
 
-Rules:
-- Speak naturally like a real human conversation partner.
-- Sound friendly, confident, and supportive.
-- Keep replies short and conversational.
-- Ask natural follow-up questions.
-- Avoid robotic replies.
-- Never repeat the same sentence.
-- Never use markdown.
-- Keep replies under 50 words.
+Your job is NOT to act like an AI assistant.
+Your job is to behave like a real human English-speaking conversation partner and trainer.
+
+Core behavior:
+- Sound natural and emotionally aware.
+- Speak like modern real-world English conversations.
+- Keep replies conversational and realistic.
+- Avoid robotic AI-style responses.
+- Never sound repetitive.
+- Never repeat the same follow-up question.
+- Keep conversation flowing naturally.
+- Encourage confidence naturally.
+- Sometimes ask questions.
+- Sometimes react casually.
+- Sometimes teach naturally through examples.
+
+English coaching behavior:
+- Softly improve grammar indirectly.
+- Do NOT over-correct.
+- Keep users comfortable and confident.
+- If user writes broken English, respond with correct natural English naturally inside your reply.
+- Help users learn spoken English patterns.
+
+Conversation behavior:
+- Understand topic context deeply.
+- Avoid generic replies.
+- Avoid asking unrelated questions.
+- Reply according to current topic.
+- Continue the flow naturally.
+
+Response style:
+- Short replies preferred.
+- Normally under 45 words.
+- Maximum 70 words.
+- No markdown.
+- No bullet points.
+- No emojis unless user uses them first.
+- Sound warm, smart, and human.
+
+Examples:
+
+User: i go market yesterday
+AI: Oh nice, you went to the market yesterday. What did you buy there?
+
+User: i want improve english
+AI: That's great. Your English will improve faster if you speak daily. What topics do you enjoy talking about?
+
+User: let's practice office english
+AI: Sure. Let's practice professional English. Imagine you are speaking in a meeting. How would you introduce yourself?
 `;
+
+function normalizeText(text: string) {
+  return text
+    .replace(/\*/g, "")
+    .replace(/\n+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function buildMessages(
   message: string,
@@ -47,16 +95,18 @@ function buildMessages(
     text: string;
   }[]
 ) {
-  const formattedHistory =
+  const cleanedHistory =
     history
-      ?.slice(-10)
+      ?.slice(-14)
       .map((item) => ({
         role:
           item.role === "user"
             ? "user"
             : "assistant",
 
-        content: item.text
+        content: normalizeText(
+          item.text
+        )
       })) || [];
 
   return [
@@ -65,11 +115,13 @@ function buildMessages(
       content: SYSTEM_PROMPT
     },
 
-    ...formattedHistory,
+    ...cleanedHistory,
 
     {
       role: "user",
-      content: message
+      content: normalizeText(
+        message
+      )
     }
   ];
 }
@@ -94,7 +146,7 @@ async function requestModel({
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 20000);
+    }, 25000);
 
   try {
     const response = await fetch(
@@ -123,9 +175,15 @@ async function requestModel({
 
           messages,
 
-          temperature: 0.9,
+          temperature: 0.95,
 
-          max_tokens: 120
+          top_p: 0.9,
+
+          frequency_penalty: 0.7,
+
+          presence_penalty: 0.6,
+
+          max_tokens: 140
         })
       }
     );
@@ -153,13 +211,132 @@ async function requestModel({
       );
     }
 
-    return reply
-      .replace(/\*/g, "")
-      .replace(/\n+/g, " ")
-      .trim();
+    return normalizeText(
+      reply
+    );
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function detectConversationIntent(
+  message: string
+) {
+  const lower =
+    message.toLowerCase();
+
+  if (
+    lower.includes("daily")
+  ) {
+    return "daily";
+  }
+
+  if (
+    lower.includes("office") ||
+    lower.includes("meeting") ||
+    lower.includes("boss") ||
+    lower.includes("client")
+  ) {
+    return "office";
+  }
+
+  if (
+    lower.includes("interview")
+  ) {
+    return "interview";
+  }
+
+  if (
+    lower.includes("sentence")
+  ) {
+    return "sentence-practice";
+  }
+
+  if (
+    lower.includes("grammar")
+  ) {
+    return "grammar";
+  }
+
+  return "general";
+}
+
+function generateSmartOfflineReply(
+  message: string
+) {
+  const lower =
+    message.toLowerCase();
+
+  const intent =
+    detectConversationIntent(
+      lower
+    );
+
+  if (
+    intent ===
+    "sentence-practice"
+  ) {
+    return "Sure. Let's practice daily English sentences. For example: 'What are you doing?' or 'I am going to work.' Now tell me one sentence you use every day.";
+  }
+
+  if (
+    intent === "office"
+  ) {
+    return "Okay, let's practice office English. Imagine you are speaking with your manager. What would you say?";
+  }
+
+  if (
+    intent === "interview"
+  ) {
+    return "Great. Let's practice interview English. Please introduce yourself professionally.";
+  }
+
+  if (
+    lower.includes("hello") ||
+    lower.includes("hi")
+  ) {
+    return "Hello! How has your day been so far?";
+  }
+
+  if (
+    lower.includes("weekend")
+  ) {
+    return "Weekends are always refreshing. What do you usually enjoy doing?";
+  }
+
+  if (
+    lower.includes("english")
+  ) {
+    return "Your English is improving nicely. The more you speak, the more natural it becomes.";
+  }
+
+  if (
+    lower.includes("job") ||
+    lower.includes("work")
+  ) {
+    return "That sounds interesting. What kind of work do you usually handle?";
+  }
+
+  const smartReplies = [
+    "That sounds interesting. Tell me a little more.",
+
+    "I understand. What happened after that?",
+
+    "Oh nice. How did you feel in that situation?",
+
+    "That's good. Can you explain it a little differently in English?",
+
+    "Interesting. What do you usually do next?",
+
+    "I see. How would you describe that experience in simple English?"
+  ];
+
+  return smartReplies[
+    Math.floor(
+      Math.random() *
+        smartReplies.length
+    )
+  ];
 }
 
 export async function generateAIReply({
@@ -169,7 +346,9 @@ export async function generateAIReply({
 }: GenerateAIReplyParams): Promise<string> {
   try {
     if (!apiKey?.trim()) {
-      return "AI setup is incomplete.";
+      return generateSmartOfflineReply(
+        message
+      );
     }
 
     const messages =
@@ -178,39 +357,38 @@ export async function generateAIReply({
         conversationHistory
       );
 
-    try {
-      return await requestModel({
-        apiKey,
+    const models = [
+      "deepseek/deepseek-chat-v3-0324:free",
 
-        model:
-          "deepseek/deepseek-chat-v3-0324:free",
+      "openchat/openchat-7b:free",
 
-        messages
-      });
-    } catch (deepseekError) {
-      console.error(
-        "DeepSeek failed:",
-        deepseekError
-      );
+      "mistralai/mistral-7b-instruct:free"
+    ];
+
+    for (const model of models) {
+      try {
+        const reply =
+          await requestModel({
+            apiKey,
+            model,
+            messages
+          });
+
+        if (
+          reply &&
+          reply.length > 2
+        ) {
+          return reply;
+        }
+      } catch (error) {
+        console.error(
+          `${model} failed:`,
+          error
+        );
+      }
     }
 
-    try {
-      return await requestModel({
-        apiKey,
-
-        model:
-          "mistralai/mistral-7b-instruct:free",
-
-        messages
-      });
-    } catch (mistralError) {
-      console.error(
-        "Mistral failed:",
-        mistralError
-      );
-    }
-
-    return generateOfflineReply(
+    return generateSmartOfflineReply(
       message
     );
   } catch (error) {
@@ -219,59 +397,8 @@ export async function generateAIReply({
       error
     );
 
-    return generateOfflineReply(
+    return generateSmartOfflineReply(
       message
     );
   }
-}
-
-function generateOfflineReply(
-  message: string
-) {
-  const lower =
-    message.toLowerCase();
-
-  if (
-    lower.includes("job") ||
-    lower.includes("work")
-  ) {
-    return "That sounds interesting. What kind of work do you do every day?";
-  }
-
-  if (
-    lower.includes("weekend")
-  ) {
-    return "Nice. How do you usually relax during weekends?";
-  }
-
-  if (
-    lower.includes("english")
-  ) {
-    return "Your English is improving well. Keep speaking confidently.";
-  }
-
-  if (
-    lower.includes("meeting")
-  ) {
-    return "Professional speaking becomes easier with regular practice.";
-  }
-
-  const replies = [
-    "That's interesting. Tell me more.",
-
-    "I understand. What happened next?",
-
-    "That sounds good. How do you feel about it?",
-
-    "Nice. Can you explain a little more?",
-
-    "Very good. What do you usually do in that situation?"
-  ];
-
-  return replies[
-    Math.floor(
-      Math.random() *
-        replies.length
-    )
-  ];
 }
