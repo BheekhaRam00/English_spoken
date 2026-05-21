@@ -52,6 +52,8 @@ export class AudioCallEngine {
 
   private listening: boolean;
 
+  private processing: boolean;
+
   private messages: ConversationMessage[];
 
   constructor({
@@ -75,12 +77,19 @@ export class AudioCallEngine {
     this.listening =
       false;
 
+    this.processing =
+      false;
+
     this.messages = [];
   }
 
   async connect(
     onMessage?: MessageCallback
   ) {
+    if (this.connected) {
+      return this.messages[0];
+    }
+
     const starter =
       startConversation({
         mode: this.mode
@@ -98,9 +107,9 @@ export class AudioCallEngine {
           new Date().toISOString()
       };
 
-    this.messages.push(
+    this.messages = [
       aiMessage
-    );
+    ];
 
     this.connected = true;
 
@@ -112,10 +121,6 @@ export class AudioCallEngine {
           this.voiceType
       });
     }
-
-    onMessage?.(
-      aiMessage
-    );
 
     return aiMessage;
   }
@@ -129,6 +134,9 @@ export class AudioCallEngine {
       false;
 
     this.listening =
+      false;
+
+    this.processing =
       false;
   }
 
@@ -148,101 +156,143 @@ export class AudioCallEngine {
     text: string,
     onMessage?: MessageCallback
   ) {
+    if (
+      this.processing
+    ) {
+      return null;
+    }
+
     const cleaned =
-      text.trim();
+      text
+        .replace(/\s+/g, " ")
+        .trim();
 
     if (!cleaned) {
       return null;
     }
 
-    const userMessage: ConversationMessage =
-      {
-        id: Date.now(),
-
-        role: "user",
-
-        text: cleaned,
-
-        createdAt:
-          new Date().toISOString()
-      };
-
-    this.messages.push(
-      userMessage
-    );
-
-    onMessage?.(
-      userMessage
-    );
-
-    let aiReply =
-      generateFallbackReply(
-        cleaned,
-        this.mode
-      );
+    this.processing =
+      true;
 
     try {
-      aiReply =
-        await continueConversation(
-          {
-            userMessage:
-              cleaned,
+      const userMessage: ConversationMessage =
+        {
+          id: Date.now(),
 
-            history:
-              this.messages.map(
-                (
-                  message
-                ) => ({
-                  role:
-                    message.role,
+          role: "user",
 
-                  text:
-                    message.text
-                })
-              ),
+          text: cleaned,
 
-            mode:
-              this.mode
-          }
-        );
-    } catch (error) {
-      console.error(
-        "Audio Call AI Error:",
-        error
+          createdAt:
+            new Date().toISOString()
+        };
+
+      this.messages.push(
+        userMessage
       );
+
+      onMessage?.(
+        userMessage
+      );
+
+      let aiReply =
+        generateFallbackReply(
+          cleaned,
+          this.mode
+        );
+
+      try {
+        const reply =
+          await continueConversation(
+            {
+              userMessage:
+                cleaned,
+
+              history:
+                this.messages
+                  .slice(-10)
+                  .map(
+                    (
+                      message
+                    ) => ({
+                      role:
+                        message.role,
+
+                      text:
+                        message.text
+                    })
+                  ),
+
+              mode:
+                this.mode
+            }
+          );
+
+        if (
+          reply &&
+          reply.trim()
+        ) {
+          aiReply =
+            reply;
+        }
+      } catch (error) {
+        console.error(
+          "Audio Call AI Error:",
+          error
+        );
+      }
+
+      const cleanedReply =
+        aiReply
+          .replace(
+            /\n{2,}/g,
+            "\n"
+          )
+          .replace(
+            /\s+/g,
+            " "
+          )
+          .trim();
+
+      const aiMessage: ConversationMessage =
+        {
+          id:
+            Date.now() + 1,
+
+          role: "ai",
+
+          text:
+            cleanedReply,
+
+          createdAt:
+            new Date().toISOString()
+        };
+
+      this.messages.push(
+        aiMessage
+      );
+
+      if (
+        this.autoSpeak
+      ) {
+        speakText({
+          text:
+            cleanedReply,
+
+          voiceType:
+            this.voiceType
+        });
+      }
+
+      onMessage?.(
+        aiMessage
+      );
+
+      return aiMessage;
+    } finally {
+      this.processing =
+        false;
     }
-
-    const aiMessage: ConversationMessage =
-      {
-        id:
-          Date.now() + 1,
-
-        role: "ai",
-
-        text: aiReply,
-
-        createdAt:
-          new Date().toISOString()
-      };
-
-    this.messages.push(
-      aiMessage
-    );
-
-    if (this.autoSpeak) {
-      speakText({
-        text: aiReply,
-
-        voiceType:
-          this.voiceType
-      });
-    }
-
-    onMessage?.(
-      aiMessage
-    );
-
-    return aiMessage;
   }
 
   startVoiceListening(
@@ -250,6 +300,12 @@ export class AudioCallEngine {
     onMessage?: MessageCallback,
     onError?: ErrorCallback
   ) {
+    if (
+      this.listening
+    ) {
+      return;
+    }
+
     this.listening = true;
 
     startSpeechRecognition({
@@ -276,12 +332,21 @@ export class AudioCallEngine {
       onResult: async (
         transcript
       ) => {
+        const cleanedTranscript =
+          transcript.trim();
+
+        if (
+          !cleanedTranscript
+        ) {
+          return;
+        }
+
         onTranscript?.(
-          transcript
+          cleanedTranscript
         );
 
         await this.sendTextMessage(
-          transcript,
+          cleanedTranscript,
           onMessage
         );
       }
@@ -291,7 +356,8 @@ export class AudioCallEngine {
   stopVoiceListening() {
     stopSpeechRecognition();
 
-    this.listening = false;
+    this.listening =
+      false;
   }
 
   replayLastAIMessage() {
@@ -318,7 +384,17 @@ export class AudioCallEngine {
   }
 
   clearConversation() {
+    stopSpeaking();
+
+    stopSpeechRecognition();
+
     this.messages = [];
+
+    this.processing =
+      false;
+
+    this.listening =
+      false;
   }
 
   exportConversationText() {
