@@ -1,9 +1,6 @@
 import { buildSystemPrompt }
   from "@/server/ai/system-prompts";
 
-import { buildConversationContext }
-  from "@/server/ai/context-manager";
-
 import { cleanAIText }
   from "@/server/utils/text";
 
@@ -55,7 +52,7 @@ async function makeRequest({
   model,
   systemPrompt,
   message,
-  conversationContext
+  history
 }: {
   apiKey: string;
 
@@ -65,8 +62,39 @@ async function makeRequest({
 
   message: string;
 
-  conversationContext: string;
+  history: {
+    role: "user" | "ai";
+
+    text: string;
+  }[];
 }) {
+  const messages = [
+    {
+      role: "system",
+
+      content:
+        systemPrompt
+    },
+
+    ...history
+      .slice(-12)
+      .map((item) => ({
+        role:
+          item.role === "ai"
+            ? "assistant"
+            : "user",
+
+        content:
+          item.text
+      })),
+
+    {
+      role: "user",
+
+      content: message
+    }
+  ];
+
   const response = await fetch(
     OPENROUTER_URL,
     {
@@ -88,39 +116,17 @@ async function makeRequest({
       body: JSON.stringify({
         model,
 
-        temperature: 0.7,
+        messages,
 
-        top_p: 1,
+        temperature: 0.45,
 
-        max_tokens: 140,
+        top_p: 0.9,
 
-        messages: [
-          {
-            role: "system",
+        frequency_penalty: 0.3,
 
-            content:
-              systemPrompt
-          },
+        presence_penalty: 0.2,
 
-          {
-            role: "user",
-
-            content: `
-Conversation History:
-${conversationContext}
-
-Current User Message:
-${message}
-
-Instructions:
-- Reply naturally.
-- Keep conversation engaging.
-- Help improve spoken English.
-- Use short conversational replies.
-- Ask follow-up questions when suitable.
-`
-          }
-        ]
+        max_tokens: 120
       })
     }
   );
@@ -151,7 +157,9 @@ Instructions:
 
   return cleanAIText(
     aiReply
-  );
+  )
+    .replace(/\n+/g, " ")
+    .trim();
 }
 
 export async function callOpenRouter({
@@ -161,14 +169,20 @@ export async function callOpenRouter({
   mode
 }: OpenRouterParams) {
   try {
+    const cleanedMessage =
+      cleanAIText(
+        message
+      ).trim();
+
+    if (!cleanedMessage) {
+      throw new Error(
+        "Message is empty."
+      );
+    }
+
     const systemPrompt =
       buildSystemPrompt(
         mode
-      );
-
-    const conversationContext =
-      buildConversationContext(
-        history
       );
 
     try {
@@ -180,9 +194,10 @@ export async function callOpenRouter({
 
         systemPrompt,
 
-        message,
+        message:
+          cleanedMessage,
 
-        conversationContext
+        history
       });
     } catch (
       primaryError
@@ -200,9 +215,10 @@ export async function callOpenRouter({
 
         systemPrompt,
 
-        message,
+        message:
+          cleanedMessage,
 
-        conversationContext
+        history
       });
     }
   } catch (error) {
