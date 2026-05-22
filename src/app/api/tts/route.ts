@@ -61,9 +61,16 @@ export async function POST(
       process.env
         .HUGGINGFACE_API_KEY;
 
+    /*
+    ENV CHECK
+    */
     if (
       !huggingFaceKey
     ) {
+      console.error(
+        "Missing HuggingFace API key."
+      );
+
       return NextResponse.json(
         {
           success: false,
@@ -86,6 +93,9 @@ export async function POST(
         body?.text || ""
       );
 
+    /*
+    EMPTY TEXT CHECK
+    */
     if (
       !cleanedText
     ) {
@@ -111,6 +121,9 @@ export async function POST(
         700
       );
 
+    /*
+    REQUEST HUGGINGFACE
+    */
     const response =
       await fetch(
         HUGGINGFACE_API_URL,
@@ -142,6 +155,9 @@ export async function POST(
         }
       );
 
+    /*
+    DEBUG ERROR RESPONSE
+    */
     if (!response.ok) {
       const errorText =
         await response.text();
@@ -155,6 +171,9 @@ export async function POST(
         {
           success: false,
 
+          status:
+            response.status,
+
           message:
             "TTS generation failed.",
 
@@ -162,13 +181,42 @@ export async function POST(
             errorText
         },
         {
-          status: 500
+          status:
+            response.status
         }
       );
     }
 
+    /*
+    AUDIO RESPONSE
+    */
     const audioBuffer =
       await response.arrayBuffer();
+
+    /*
+    EMPTY AUDIO CHECK
+    */
+    if (
+      !audioBuffer ||
+      audioBuffer.byteLength ===
+        0
+    ) {
+      console.error(
+        "Empty audio buffer received."
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+
+          message:
+            "Empty audio response."
+        },
+        {
+          status: 500
+        }
+      );
+    }
 
     return new NextResponse(
       audioBuffer,
@@ -180,7 +228,10 @@ export async function POST(
             "audio/mpeg",
 
           "Cache-Control":
-            "no-store"
+            "no-store",
+
+          "Content-Length":
+            audioBuffer.byteLength.toString()
         }
       }
     );
@@ -195,7 +246,12 @@ export async function POST(
         success: false,
 
         message:
-          "Unable to generate speech."
+          "Unable to generate speech.",
+
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error"
       },
       {
         status: 500
