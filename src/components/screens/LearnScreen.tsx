@@ -819,22 +819,69 @@ export default function LearnScreen({
           )}
         </button>
 
- {/* FOOTER */}
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-purple-600/10 to-blue-600/10 p-4">
-          <div className="mb-2 flex items-center gap-2">
-            <Sparkles
-              size={16}
-            />
+ <div className="space-y-1 text-xs text-white/70">
 
-            <h2 className="text-sm font-semibold">
-              AI Learning
-            </h2>
-          </div>
+  <div className="flex justify-between">
+    <span>API Status</span>
 
-          <p className="text-xs leading-6 text-white/70">
-            Learn English sentence-by-sentence with auto voice playback and replay support.
-          </p>
-        </section>
+    <span>
+      {debugInfo?.success
+        ? "200 Success"
+        : "Failed"}
+    </span>
+  </div>
+
+  <div className="flex justify-between">
+    <span>Lesson Source</span>
+
+    <span>
+      {debugInfo?.lesson
+        ?.source ||
+        "missing"}
+    </span>
+  </div>
+
+  <div className="flex justify-between">
+    <span>AI Model</span>
+
+    <span className="max-w-[150px] truncate text-right">
+      {debugInfo?.lesson
+        ?.model ||
+        "missing"}
+    </span>
+  </div>
+
+  <div className="flex justify-between">
+    <span>Debug</span>
+
+    <span className="max-w-[170px] truncate text-right">
+      {debugInfo?.lesson
+        ?.debug ||
+        "missing"}
+    </span>
+  </div>
+
+  <div className="flex justify-between">
+    <span>Sentences</span>
+
+    <span>
+      {debugInfo?.lesson
+        ?.sentences
+        ?.length || 0}
+    </span>
+  </div>
+
+  <div className="flex justify-between">
+    <span>Vocabulary</span>
+
+    <span>
+      {debugInfo?.lesson
+        ?.vocabulary
+        ?.length || 0}
+    </span>
+  </div>
+
+</div>
 
       </div>
     </main>
