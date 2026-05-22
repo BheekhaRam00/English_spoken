@@ -18,7 +18,9 @@ import {
   Loader2,
   RefreshCw,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle,
+  CheckCircle
 } from "lucide-react";
 
 import {
@@ -72,6 +74,28 @@ type LessonData = {
   pronunciationTip?: string;
 };
 
+type DebugInfo = {
+  apiStatus?: number;
+
+  success?: boolean;
+
+  source?:
+    | "ai"
+    | "fallback";
+
+  mode?: string;
+
+  model?: string;
+
+  error?: string;
+
+  generatedAt?: number;
+
+  sentenceCount?: number;
+
+  vocabularyCount?: number;
+};
+
 export default function LearnScreen({
   mode,
   onModeChange
@@ -88,11 +112,13 @@ export default function LearnScreen({
     useState("");
 
   /*
-  DEBUG INFO
+  STABLE DEBUG INFO
   */
   const [debugInfo,
     setDebugInfo] =
-    useState<any>(null);
+    useState<DebugInfo | null>(
+      null
+    );
 
   const [
     currentSentenceIndex,
@@ -136,22 +162,68 @@ export default function LearnScreen({
         await response.json();
 
       /*
-      DEBUG CONSOLE
+      SAFE DEBUG SYSTEM
+      */
+      const lessonData =
+        data?.lesson;
+
+      const debug: DebugInfo =
+        {
+          apiStatus:
+            response.status,
+
+          success:
+            Boolean(
+              data?.success
+            ),
+
+          source:
+            data?.source ||
+            "unknown",
+
+          mode:
+            data?.mode,
+
+          model:
+            data?.model,
+
+          error:
+            data?.error ||
+            "",
+
+          generatedAt:
+            data?.generatedAt,
+
+          sentenceCount:
+            lessonData
+              ?.sentences
+              ?.length || 0,
+
+          vocabularyCount:
+            lessonData
+              ?.vocabulary
+              ?.length || 0
+        };
+
+      setDebugInfo(debug);
+
+      /*
+      CONSOLE DEBUG
       */
       console.log(
         "LESSON API RESPONSE:",
         data
       );
 
-      /*
-      DEBUG UI
-      */
-      setDebugInfo(data);
+      console.log(
+        "LESSON DEBUG:",
+        debug
+      );
 
       if (
         !response.ok ||
         !data?.success ||
-        !data?.lesson
+        !lessonData
       ) {
         throw new Error(
           data?.message ||
@@ -160,20 +232,20 @@ export default function LearnScreen({
       }
 
       /*
-      IMPORTANT DEBUG
+      VALIDATION
       */
-      console.log(
-        "LESSON SENTENCES:",
-        data.lesson.sentences
-      );
-
-      console.log(
-        "LESSON VOCAB:",
-        data.lesson.vocabulary
-      );
+      if (
+        !Array.isArray(
+          lessonData.sentences
+        )
+      ) {
+        throw new Error(
+          "Invalid lesson format."
+        );
+      }
 
       setLesson(
-        data.lesson
+        lessonData
       );
     } catch (error: any) {
       console.error(
@@ -185,6 +257,16 @@ export default function LearnScreen({
         error?.message ||
         "Unable to generate lesson."
       );
+
+      setDebugInfo({
+        apiStatus: 500,
+
+        success: false,
+
+        error:
+          error?.message ||
+          "Unknown frontend error"
+      });
     } finally {
       setLoading(false);
     }
@@ -380,26 +462,142 @@ export default function LearnScreen({
         {/* ERROR */}
         {error ? (
           <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-4">
-            <p className="text-sm text-red-200">
-              {error}
-            </p>
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                size={18}
+                className="mt-0.5 shrink-0 text-red-300"
+              />
+
+              <div>
+                <h3 className="text-sm font-semibold text-red-200">
+                  Error
+                </h3>
+
+                <p className="mt-1 text-sm text-red-100">
+                  {error}
+                </p>
+              </div>
+            </div>
           </div>
         ) : null}
 
-        {/* DEBUG */}
+        {/* STABLE DEBUG PANEL */}
         {debugInfo ? (
           <div className="rounded-3xl border border-yellow-500/20 bg-yellow-500/10 p-4">
-            <h3 className="mb-2 text-sm font-semibold text-yellow-200">
-              Debug Info
-            </h3>
 
-            <pre className="overflow-x-auto text-[10px] leading-5 text-yellow-100 whitespace-pre-wrap">
-              {JSON.stringify(
-                debugInfo,
-                null,
-                2
-              )}
-            </pre>
+            <div className="mb-3 flex items-center gap-2">
+              <Brain
+                size={16}
+                className="text-yellow-300"
+              />
+
+              <h3 className="text-sm font-semibold text-yellow-200">
+                System Debug
+              </h3>
+            </div>
+
+            <div className="space-y-2 text-xs">
+
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">
+                  API Status
+                </span>
+
+                <span className="font-semibold">
+                  {
+                    debugInfo.apiStatus
+                  }
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">
+                  Request
+                </span>
+
+                <span className={`flex items-center gap-1 font-semibold ${
+                  debugInfo.success
+                    ? "text-green-300"
+                    : "text-red-300"
+                }`}>
+                  {debugInfo.success ? (
+                    <CheckCircle
+                      size={12}
+                    />
+                  ) : (
+                    <AlertTriangle
+                      size={12}
+                    />
+                  )}
+
+                  {debugInfo.success
+                    ? "Success"
+                    : "Failed"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">
+                  Lesson Source
+                </span>
+
+                <span className={`font-semibold ${
+                  debugInfo.source ===
+                  "ai"
+                    ? "text-green-300"
+                    : "text-orange-300"
+                }`}>
+                  {
+                    debugInfo.source
+                  }
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">
+                  AI Model
+                </span>
+
+                <span className="max-w-[180px] truncate text-right text-white/90">
+                  {debugInfo.model ||
+                    "Unknown"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">
+                  Sentences
+                </span>
+
+                <span className="font-semibold">
+                  {
+                    debugInfo.sentenceCount
+                  }
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">
+                  Vocabulary
+                </span>
+
+                <span className="font-semibold">
+                  {
+                    debugInfo.vocabularyCount
+                  }
+                </span>
+              </div>
+
+              {debugInfo.error ? (
+                <div className="mt-3 rounded-2xl bg-red-500/10 p-3">
+                  <p className="text-[11px] leading-5 text-red-200">
+                    {
+                      debugInfo.error
+                    }
+                  </p>
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -644,21 +842,4 @@ export default function LearnScreen({
 
         {/* FOOTER */}
         <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-purple-600/10 to-blue-600/10 p-4">
-          <div className="mb-2 flex items-center gap-2">
-            <Sparkles
-              size={16}
-            />
-
-            <h2 className="text-sm font-semibold">
-              AI Learning
-            </h2>
-          </div>
-
-          <p className="text-xs leading-6 text-white/70">
-            Learn English sentence-by-sentence with auto voice playback and replay support.
-          </p>
-        </section>
-      </div>
-    </main>
-  );
-            }
+          <div className="mb-2 f
