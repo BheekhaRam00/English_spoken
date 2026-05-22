@@ -23,12 +23,16 @@ type VocabularyItem = {
   pronunciation: string;
 };
 
-type LessonResponse = {
-  title: string;
-
+type LessonSentence = {
   english: string;
 
   hindi: string;
+};
+
+type LessonResponse = {
+  title: string;
+
+  sentences: LessonSentence[];
 
   vocabulary: VocabularyItem[];
 
@@ -50,18 +54,12 @@ type OpenRouterResponse = {
 const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
-/*
-ONLY ACTIVE + STABLE FREE MODELS
-*/
 const MODELS = [
   "meta-llama/llama-3.2-3b-instruct:free",
   "microsoft/phi-3-mini-128k-instruct:free",
   "google/gemma-2-9b-it:free"
 ];
 
-/*
-PREVENT SAME LESSON REPEAT
-*/
 const RECENT_LESSONS =
   new Map<
     string,
@@ -80,16 +78,15 @@ ${mode}
 
 STRICT RULES:
 - ONLY 4 to 5 short sentences.
-- Every sentence MUST be on NEW LINE.
-- Easy spoken English.
+- Spoken English only.
 - Real life conversation.
-- NO paragraph.
-- NO markdown.
-- NO numbering.
-- NO heading inside lesson.
-- Hindi translation line-by-line.
+- VERY EASY English.
+- Every English sentence MUST have matching Hindi translation.
 - Add ONLY 3 vocabulary words.
 - Return STRICT VALID JSON ONLY.
+- NO markdown.
+- NO explanation.
+- NO numbering.
 
 DO NOT REPEAT THESE LESSONS:
 ${previousLessons.join("\n---\n")}
@@ -97,8 +94,12 @@ ${previousLessons.join("\n---\n")}
 VALID JSON FORMAT:
 {
   "title": "",
-  "english": "",
-  "hindi": "",
+  "sentences": [
+    {
+      "english": "",
+      "hindi": ""
+    }
+  ],
   "vocabulary": [
     {
       "word": "",
@@ -155,7 +156,7 @@ async function requestLesson(
 
             top_p: 0.95,
 
-            max_tokens: 220,
+            max_tokens: 260,
 
             frequency_penalty: 0.6,
 
@@ -212,41 +213,42 @@ async function requestLesson(
   }
 }
 
-function normalizeLines(
-  text: string
-) {
-  return text
-    .split(
-      /\n|[.!?]+/
-    )
-    .map((line) =>
-      line.trim()
-    )
-    .filter(
-      (line) =>
-        line.length > 1
-    )
-    .slice(0, 5)
-    .join("\n");
-}
-
 function sanitizeLesson(
-  lesson: LessonResponse
+  lesson: any
 ): LessonResponse {
   return {
     title:
       lesson.title ||
       "English Practice",
 
-    english:
-      normalizeLines(
-        lesson.english
-      ),
+    sentences:
+      (
+        lesson.sentences ||
+        []
+      )
+        .filter(
+          (
+            item: any
+          ) =>
+            item?.english &&
+            item?.hindi
+        )
+        .slice(0, 5)
+        .map(
+          (
+            item: any
+          ) => ({
+            english:
+              String(
+                item.english
+              ).trim(),
 
-    hindi:
-      normalizeLines(
-        lesson.hindi
-      ),
+            hindi:
+              String(
+                item.hindi
+              ).trim()
+          })
+        ),
 
     vocabulary:
       (
@@ -254,7 +256,9 @@ function sanitizeLesson(
         []
       )
         .filter(
-          (item) =>
+          (
+            item: any
+          ) =>
             item?.word
         )
         .slice(0, 3),
@@ -305,11 +309,11 @@ function parseLesson(
     const parsed =
       JSON.parse(
         jsonString
-      ) as LessonResponse;
+      );
 
     if (
-      !parsed?.english ||
-      !parsed?.hindi
+      !parsed?.sentences
+        ?.length
     ) {
       return null;
     }
@@ -329,7 +333,7 @@ function parseLesson(
 
 function rememberLesson(
   mode: string,
-  english: string
+  lesson: string
 ) {
   const existing =
     RECENT_LESSONS.get(
@@ -337,7 +341,7 @@ function rememberLesson(
     ) || [];
 
   existing.unshift(
-    english
+    lesson
   );
 
   RECENT_LESSONS.set(
@@ -360,143 +364,160 @@ function generateFallbackLesson(
   mode: string
 ): LessonResponse {
   const fallbackLessons = {
-    beginner: [
-      {
-        title:
-          "Simple English",
+    beginner: {
+      title:
+        "Simple English",
 
-        english:
-          "Hello\nWhat is your name\nMy name is Ravi\nI am learning English\nNice to meet you",
+      sentences: [
+        {
+          english:
+            "Hello",
 
-        hindi:
-          "हेलो\nआपका नाम क्या है\nमेरा नाम रवि है\nमैं अंग्रेजी सीख रहा हूँ\nआपसे मिलकर अच्छा लगा"
-      },
+          hindi:
+            "हेलो"
+        },
 
-      {
-        title:
-          "Daily Speaking",
+        {
+          english:
+            "What is your name",
 
-        english:
-          "Good morning\nHow are you today\nI am feeling good\nI am going to school\nHave a nice day",
+          hindi:
+            "आपका नाम क्या है"
+        },
 
-        hindi:
-          "सुप्रभात\nआज आप कैसे हैं\nमैं अच्छा महसूस कर रहा हूँ\nमैं स्कूल जा रहा हूँ\nआपका दिन शुभ हो"
-      }
-    ],
+        {
+          english:
+            "My name is Ravi",
 
-    daily: [
-      {
-        title:
-          "Daily Talk",
+          hindi:
+            "मेरा नाम रवि है"
+        },
 
-        english:
-          "Where are you going\nI am going to the market\nDo you need anything\nPlease buy some fruits\nOkay I will",
+        {
+          english:
+            "I am learning English",
 
-        hindi:
-          "आप कहाँ जा रहे हैं\nमैं बाजार जा रहा हूँ\nक्या आपको कुछ चाहिए\nकृपया कुछ फल ले आना\nठीक है मैं लाऊँगा"
-      },
+          hindi:
+            "मैं अंग्रेजी सीख रहा हूँ"
+        },
 
-      {
-        title:
-          "Friends Conversation",
+        {
+          english:
+            "Nice to meet you",
 
-        english:
-          "Hello my friend\nWhat are you doing\nI am watching a movie\nThat sounds fun\nEnjoy your day",
+          hindi:
+            "आपसे मिलकर अच्छा लगा"
+        }
+      ]
+    },
 
-        hindi:
-          "हेलो मेरे दोस्त\nआप क्या कर रहे हैं\nमैं फिल्म देख रहा हूँ\nयह मजेदार लगता है\nअपने दिन का आनंद लें"
-      }
-    ],
+    daily: {
+      title:
+        "Friends Conversation",
 
-    office: [
-      {
-        title:
-          "Office Meeting",
+      sentences: [
+        {
+          english:
+            "Hello my friend",
 
-        english:
-          "The meeting will start now\nPlease open the report\nWe need better planning\nLet's complete the work today\nThank you everyone",
+          hindi:
+            "हेलो मेरे दोस्त"
+        },
 
-        hindi:
-          "मीटिंग अब शुरू होगी\nकृपया रिपोर्ट खोलें\nहमें बेहतर योजना चाहिए\nआइए आज काम पूरा करें\nसभी का धन्यवाद"
-      }
-    ],
+        {
+          english:
+            "What are you doing",
 
-    business: [
-      {
-        title:
-          "Business Discussion",
+          hindi:
+            "आप क्या कर रहे हैं"
+        },
 
-        english:
-          "Let's discuss the project\nThe client needs updates\nWe should improve sales\nPlease send the details today\nThank you",
+        {
+          english:
+            "I am watching a movie",
 
-        hindi:
-          "आइए प्रोजेक्ट पर चर्चा करें\nक्लाइंट को अपडेट चाहिए\nहमें बिक्री सुधारनी चाहिए\nकृपया आज विवरण भेजें\nधन्यवाद"
-      }
-    ],
+          hindi:
+            "मैं फिल्म देख रहा हूँ"
+        },
 
-    interview: [
-      {
-        title:
-          "Interview Questions",
+        {
+          english:
+            "That sounds fun",
 
-        english:
-          "Please introduce yourself\nI am a hardworking person\nI enjoy learning new skills\nI can work in a team\nThank you for this opportunity",
+          hindi:
+            "यह मजेदार लगता है"
+        },
 
-        hindi:
-          "कृपया अपना परिचय दें\nमैं मेहनती व्यक्ति हूँ\nमुझे नई चीजें सीखना पसंद है\nमैं टीम में काम कर सकता हूँ\nइस अवसर के लिए धन्यवाद"
-      }
-    ],
+        {
+          english:
+            "Enjoy your day",
 
-    pronunciation: [
-      {
-        title:
-          "Pronunciation Practice",
+          hindi:
+            "अपने दिन का आनंद लें"
+        }
+      ]
+    },
 
-        english:
-          "Please speak slowly\nRepeat the sentence clearly\nFocus on every word\nPractice every day\nConfidence is important",
+    office: {
+      title:
+        "Office Meeting",
 
-        hindi:
-          "कृपया धीरे बोलें\nवाक्य को स्पष्ट बोलें\nहर शब्द पर ध्यान दें\nरोज अभ्यास करें\nआत्मविश्वास जरूरी है"
-      }
-    ],
+      sentences: [
+        {
+          english:
+            "The meeting will start now",
 
-    advanced: [
-      {
-        title:
-          "Advanced Speaking",
+          hindi:
+            "मीटिंग अब शुरू होगी"
+        },
 
-        english:
-          "Your presentation was impressive\nWe should improve communication\nLet's finalize the strategy\nTeamwork increases productivity\nThank you for your support",
+        {
+          english:
+            "Please open the report",
 
-        hindi:
-          "आपकी प्रस्तुति प्रभावशाली थी\nहमें संचार सुधारना चाहिए\nआइए रणनीति तय करें\nटीमवर्क उत्पादकता बढ़ाता है\nआपके सहयोग के लिए धन्यवाद"
-      }
-    ]
+          hindi:
+            "कृपया रिपोर्ट खोलें"
+        },
+
+        {
+          english:
+            "We need better planning",
+
+          hindi:
+            "हमें बेहतर योजना चाहिए"
+        },
+
+        {
+          english:
+            "Let's complete the work today",
+
+          hindi:
+            "आइए आज काम पूरा करें"
+        },
+
+        {
+          english:
+            "Thank you everyone",
+
+          hindi:
+            "सभी का धन्यवाद"
+        }
+      ]
+    }
   };
 
-  const lessons =
+  const lesson =
     fallbackLessons[
       mode as keyof typeof fallbackLessons
     ] ||
     fallbackLessons.daily;
 
-  const randomLesson =
-    lessons[
-      Math.floor(
-        Math.random() *
-          lessons.length
-      )
-    ];
-
   return {
     title:
-      randomLesson.title,
+      lesson.title,
 
-    english:
-      randomLesson.english,
-
-    hindi:
-      randomLesson.hindi,
+    sentences:
+      lesson.sentences,
 
     vocabulary: [
       {
@@ -551,9 +572,6 @@ export async function generateLesson({
         mode
       );
 
-    /*
-    FALLBACK IF NO API KEY
-    */
     if (!apiKey) {
       const fallback =
         generateFallbackLesson(
@@ -562,7 +580,9 @@ export async function generateLesson({
 
       rememberLesson(
         mode,
-        fallback.english
+        JSON.stringify(
+          fallback.sentences
+        )
       );
 
       return fallback;
@@ -593,7 +613,9 @@ export async function generateLesson({
         if (parsed) {
           rememberLesson(
             mode,
-            parsed.english
+            JSON.stringify(
+              parsed.sentences
+            )
           );
 
           return parsed;
@@ -606,20 +628,9 @@ export async function generateLesson({
       }
     }
 
-    /*
-    SMART FALLBACK
-    */
-    const fallback =
-      generateFallbackLesson(
-        mode
-      );
-
-    rememberLesson(
-      mode,
-      fallback.english
+    return generateFallbackLesson(
+      mode
     );
-
-    return fallback;
   } catch (error) {
     logError(
       "Generate Lesson Error",
