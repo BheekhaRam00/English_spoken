@@ -26,9 +26,12 @@ type RequestAICompletionParams =
     }[];
 
     mode:
+      | "beginner"
       | "daily"
+      | "office"
       | "business"
       | "interview"
+      | "pronunciation"
       | "advanced";
 
     apiKey: string;
@@ -57,26 +60,39 @@ export async function requestAICompletion({
   mode,
   apiKey
 }: RequestAICompletionParams) {
+  /*
+  CLEAN INPUT
+  */
+  const cleanedMessage =
+    cleanAIText(
+      message
+    ).trim();
+
+  if (
+    !cleanedMessage
+  ) {
+    throw new Error(
+      "Empty message."
+    );
+  }
+
+  /*
+  DEBUG
+  */
+  console.log(
+    "REQUEST AI MODE:",
+    mode
+  );
+
+  console.log(
+    "REQUEST AI MESSAGE:",
+    cleanedMessage
+  );
+
+  /*
+  OPENROUTER
+  */
   try {
-    /*
-    CLEAN INPUT
-    */
-    const cleanedMessage =
-      cleanAIText(
-        message
-      ).trim();
-
-    if (
-      !cleanedMessage
-    ) {
-      throw new Error(
-        "Empty message."
-      );
-    }
-
-    /*
-    OPENROUTER AI
-    */
     const openRouterReply =
       await callOpenRouter({
         apiKey,
@@ -94,9 +110,6 @@ export async function requestAICompletion({
         openRouterReply
       );
 
-    /*
-    EMPTY CHECK
-    */
     if (
       !cleanedReply ||
       cleanedReply.length <
@@ -107,32 +120,55 @@ export async function requestAICompletion({
       );
     }
 
+    console.log(
+      "OPENROUTER SUCCESS"
+    );
+
     logInfo(
       "AI response generated successfully."
     );
 
     return cleanedReply;
-  } catch (error) {
+  } catch (error: any) {
     /*
-    AI FAILED
+    IMPORTANT DEBUG
     */
+    console.log(
+      "OPENROUTER FAILED:"
+    );
+
+    console.log(error);
+
     logError(
       "OpenRouter Provider Failed",
       error
     );
-
-    /*
-    FALLBACK
-    */
-    const fallbackReply =
-      await callMockProvider({
-        message,
-
-        mode
-      });
-
-    return normalizeReply(
-      fallbackReply
-    );
   }
+
+  /*
+  FALLBACK
+  */
+  console.log(
+    "USING MOCK PROVIDER FALLBACK"
+  );
+
+  const fallbackReply =
+    await callMockProvider({
+      message:
+        cleanedMessage,
+
+      mode:
+        mode ===
+          "business" ||
+        mode ===
+          "interview" ||
+        mode ===
+          "advanced"
+          ? mode
+          : "daily"
+    });
+
+  return normalizeReply(
+    fallbackReply
+  );
 }
