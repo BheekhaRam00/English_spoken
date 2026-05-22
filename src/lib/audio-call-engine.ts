@@ -6,7 +6,8 @@ import {
 
 import {
   speakText,
-  stopSpeaking
+  stopSpeaking,
+  isSpeaking
 } from "@/services/speech/speechSynthesis";
 
 import {
@@ -41,6 +42,19 @@ export type AudioCallEngineConfig =
     autoSpeak?: boolean;
   };
 
+function wait(
+  duration: number
+) {
+  return new Promise(
+    (resolve) => {
+      setTimeout(
+        resolve,
+        duration
+      );
+    }
+  );
+}
+
 export class AudioCallEngine {
   private mode: AIConversationMode;
 
@@ -53,6 +67,8 @@ export class AudioCallEngine {
   private listening: boolean;
 
   private processing: boolean;
+
+  private speaking: boolean;
 
   private messages: ConversationMessage[];
 
@@ -80,6 +96,9 @@ export class AudioCallEngine {
     this.processing =
       false;
 
+    this.speaking =
+      false;
+
     this.messages = [];
   }
 
@@ -87,8 +106,13 @@ export class AudioCallEngine {
     onMessage?: MessageCallback
   ) {
     if (this.connected) {
-      return this.messages[0];
+      return (
+        this.messages[0] ||
+        null
+      );
     }
+
+    stopSpeaking();
 
     const starter =
       startConversation({
@@ -113,12 +137,29 @@ export class AudioCallEngine {
 
     this.connected = true;
 
+    onMessage?.(
+      aiMessage
+    );
+
     if (this.autoSpeak) {
-      speakText({
+      this.speaking =
+        true;
+
+      await speakText({
         text: starter,
 
         voiceType:
-          this.voiceType
+          this.voiceType,
+
+        onEnd: () => {
+          this.speaking =
+            false;
+        },
+
+        onError: () => {
+          this.speaking =
+            false;
+        }
       });
     }
 
@@ -138,6 +179,9 @@ export class AudioCallEngine {
 
     this.processing =
       false;
+
+    this.speaking =
+      false;
   }
 
   isConnected() {
@@ -148,6 +192,13 @@ export class AudioCallEngine {
     return this.listening;
   }
 
+  isSpeaking() {
+    return (
+      this.speaking ||
+      isSpeaking()
+    );
+  }
+
   getMessages() {
     return this.messages;
   }
@@ -156,6 +207,9 @@ export class AudioCallEngine {
     text: string,
     onMessage?: MessageCallback
   ) {
+    /*
+    PREVENT DUPLICATE REQUESTS
+    */
     if (
       this.processing
     ) {
@@ -170,6 +224,11 @@ export class AudioCallEngine {
     if (!cleaned) {
       return null;
     }
+
+    /*
+    STOP OLD AUDIO
+    */
+    stopSpeaking();
 
     this.processing =
       true;
@@ -242,15 +301,18 @@ export class AudioCallEngine {
         );
       }
 
+      /*
+      NATURAL CLEAN
+      */
       const cleanedReply =
         aiReply
           .replace(
-            /\n{2,}/g,
-            "\n"
+            /\r/g,
+            ""
           )
           .replace(
-            /\s+/g,
-            " "
+            /\n{3,}/g,
+            "\n\n"
           )
           .trim();
 
@@ -272,21 +334,39 @@ export class AudioCallEngine {
         aiMessage
       );
 
+      onMessage?.(
+        aiMessage
+      );
+
+      /*
+      HUMAN LIKE PAUSE
+      */
+      await wait(300);
+
       if (
         this.autoSpeak
       ) {
-        speakText({
+        this.speaking =
+          true;
+
+        await speakText({
           text:
             cleanedReply,
 
           voiceType:
-            this.voiceType
+            this.voiceType,
+
+          onEnd: () => {
+            this.speaking =
+              false;
+          },
+
+          onError: () => {
+            this.speaking =
+              false;
+          }
         });
       }
-
-      onMessage?.(
-        aiMessage
-      );
 
       return aiMessage;
     } finally {
@@ -300,27 +380,43 @@ export class AudioCallEngine {
     onMessage?: MessageCallback,
     onError?: ErrorCallback
   ) {
+    /*
+    BLOCK DURING AI SPEECH
+    */
     if (
-      this.listening
+      this.listening ||
+      this.processing ||
+      this.isSpeaking()
     ) {
       return;
     }
+
+    stopSpeaking();
 
     this.listening = true;
 
     startSpeechRecognition({
       language: "en-US",
 
+      continuous:
+        false,
+
+      interimResults:
+        false,
+
       onStart: () => {
-        this.listening = true;
+        this.listening =
+          true;
       },
 
       onEnd: () => {
-        this.listening = false;
+        this.listening =
+          false;
       },
 
       onError: (error) => {
-        this.listening = false;
+        this.listening =
+          false;
 
         onError?.(
           error instanceof Error
@@ -333,13 +429,23 @@ export class AudioCallEngine {
         transcript
       ) => {
         const cleanedTranscript =
-          transcript.trim();
+          transcript
+            .replace(
+              /\s+/g,
+              " "
+            )
+            .trim();
 
         if (
           !cleanedTranscript
         ) {
           return;
         }
+
+        this.listening =
+          false;
+
+        stopSpeechRecognition();
 
         onTranscript?.(
           cleanedTranscript
@@ -360,7 +466,7 @@ export class AudioCallEngine {
       false;
   }
 
-  replayLastAIMessage() {
+  async replayLastAIMessage() {
     const lastAI =
       [...this.messages]
         .reverse()
@@ -374,12 +480,27 @@ export class AudioCallEngine {
       return;
     }
 
-    speakText({
+    stopSpeaking();
+
+    this.speaking =
+      true;
+
+    await speakText({
       text:
         lastAI.text,
 
       voiceType:
-        this.voiceType
+        this.voiceType,
+
+      onEnd: () => {
+        this.speaking =
+          false;
+      },
+
+      onError: () => {
+        this.speaking =
+          false;
+      }
     });
   }
 
@@ -394,6 +515,9 @@ export class AudioCallEngine {
       false;
 
     this.listening =
+      false;
+
+    this.speaking =
       false;
   }
 
@@ -423,4 +547,4 @@ export class AudioCallEngine {
     this.voiceType =
       voiceType;
   }
-}
+  }
