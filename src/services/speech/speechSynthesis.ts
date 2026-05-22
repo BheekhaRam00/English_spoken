@@ -20,6 +20,10 @@ let activeAudio:
   | HTMLAudioElement
   | null = null;
 
+let activeUtterance:
+  | SpeechSynthesisUtterance
+  | null = null;
+
 let speaking =
   false;
 
@@ -33,6 +37,10 @@ function cleanSpeechText(
     .trim();
 }
 
+/*
+PRIMARY:
+SERVER TTS
+*/
 async function fetchTTSAudio({
   text,
   voiceType
@@ -62,16 +70,13 @@ async function fetchTTSAudio({
       }
     );
 
-  /*
-  READ CONTENT TYPE
-  */
   const contentType =
     response.headers.get(
       "content-type"
     ) || "";
 
   /*
-  HANDLE JSON ERRORS
+  JSON ERROR
   */
   if (
     contentType.includes(
@@ -93,9 +98,6 @@ async function fetchTTSAudio({
     );
   }
 
-  /*
-  HANDLE BAD RESPONSE
-  */
   if (!response.ok) {
     throw new Error(
       "TTS request failed."
@@ -105,9 +107,6 @@ async function fetchTTSAudio({
   const audioBlob =
     await response.blob();
 
-  /*
-  INVALID AUDIO CHECK
-  */
   if (
     audioBlob.size < 1000
   ) {
@@ -119,6 +118,135 @@ async function fetchTTSAudio({
   return URL.createObjectURL(
     audioBlob
   );
+}
+
+/*
+FALLBACK:
+BROWSER VOICE
+*/
+function getBrowserVoice() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return null;
+  }
+
+  const voices =
+    window.speechSynthesis.getVoices();
+
+  if (!voices.length) {
+    return null;
+  }
+
+  const englishVoices =
+    voices.filter(
+      (voice) =>
+        voice.lang
+          .toLowerCase()
+          .includes("en")
+    );
+
+  return (
+    englishVoices[0] ||
+    voices[0]
+  );
+}
+
+async function speakWithBrowser({
+  text,
+  onStart,
+  onEnd,
+  onError
+}: SpeakTextOptions) {
+  try {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return;
+    }
+
+    const synth =
+      window.speechSynthesis;
+
+    synth.cancel();
+
+    const utterance =
+      new SpeechSynthesisUtterance(
+        text
+      );
+
+    activeUtterance =
+      utterance;
+
+    utterance.lang =
+      "en-US";
+
+    utterance.rate =
+      0.92;
+
+    utterance.pitch =
+      1;
+
+    utterance.volume =
+      1;
+
+    const selectedVoice =
+      getBrowserVoice();
+
+    if (
+      selectedVoice
+    ) {
+      utterance.voice =
+        selectedVoice;
+    }
+
+    utterance.onstart =
+      () => {
+        speaking =
+          true;
+
+        onStart?.();
+      };
+
+    utterance.onend =
+      () => {
+        speaking =
+          false;
+
+        activeUtterance =
+          null;
+
+        onEnd?.();
+      };
+
+    utterance.onerror =
+      () => {
+        speaking =
+          false;
+
+        activeUtterance =
+          null;
+
+        onError?.(
+          "Browser voice failed."
+        );
+      };
+
+    synth.speak(
+      utterance
+    );
+  } catch (error) {
+    console.error(
+      "Browser TTS Error:",
+      error
+    );
+
+    onError?.(
+      "Unable to play browser voice."
+    );
+  }
 }
 
 export async function speakText({
@@ -153,89 +281,127 @@ export async function speakText({
     }
 
     /*
-    STOP OLD AUDIO
+    RESET
     */
     stopSpeaking();
 
-    const audioUrl =
-      await fetchTTSAudio(
+    /*
+    TRY SERVER TTS
+    */
+    try {
+      const audioUrl =
+        await fetchTTSAudio(
+          {
+            text:
+              cleanedText,
+
+            voiceType
+          }
+        );
+
+      const audio =
+        new Audio();
+
+      activeAudio =
+        audio;
+
+      audio.src =
+        audioUrl;
+
+      audio.preload =
+        "auto";
+
+      audio.volume = 1;
+
+      audio.crossOrigin =
+        "anonymous";
+
+      audio.onplay =
+        () => {
+          speaking =
+            true;
+
+          onStart?.();
+        };
+
+      audio.onended =
+        () => {
+          speaking =
+            false;
+
+          URL.revokeObjectURL(
+            audioUrl
+          );
+
+          activeAudio =
+            null;
+
+          onEnd?.();
+        };
+
+      audio.onerror =
+        async () => {
+          speaking =
+            false;
+
+          URL.revokeObjectURL(
+            audioUrl
+          );
+
+          activeAudio =
+            null;
+
+          /*
+          AUTO FALLBACK
+          */
+          await speakWithBrowser(
+            {
+              text:
+                cleanedText,
+
+              voiceType,
+
+              onStart,
+
+              onEnd,
+
+              onError
+            }
+          );
+        };
+
+      audio.load();
+
+      await audio.play();
+
+      return;
+    } catch (serverError) {
+      console.error(
+        "Server TTS Failed:",
+        serverError
+      );
+
+      /*
+      FALLBACK
+      */
+      await speakWithBrowser(
         {
           text:
             cleanedText,
 
-          voiceType
+          voiceType,
+
+          onStart,
+
+          onEnd,
+
+          onError
         }
       );
-
-    const audio =
-      new Audio();
-
-    activeAudio =
-      audio;
-
-    audio.src =
-      audioUrl;
-
-    audio.preload =
-      "auto";
-
-    audio.volume = 1;
-
-    audio.crossOrigin =
-      "anonymous";
-
-    audio.onplay =
-      () => {
-        speaking =
-          true;
-
-        onStart?.();
-      };
-
-    audio.onended =
-      () => {
-        speaking =
-          false;
-
-        URL.revokeObjectURL(
-          audioUrl
-        );
-
-        activeAudio =
-          null;
-
-        onEnd?.();
-      };
-
-    audio.onerror =
-      () => {
-        speaking =
-          false;
-
-        URL.revokeObjectURL(
-          audioUrl
-        );
-
-        activeAudio =
-          null;
-
-        onError?.(
-          "Audio playback failed."
-        );
-      };
-
-    /*
-    FORCE LOAD
-    */
-    audio.load();
-
-    /*
-    MOBILE SAFE PLAY
-    */
-    await audio.play();
+    }
   } catch (error) {
     console.error(
-      "Kokoro Speech Error:",
+      "Speech Error:",
       error
     );
 
@@ -243,6 +409,9 @@ export async function speakText({
       false;
 
     activeAudio =
+      null;
+
+    activeUtterance =
       null;
 
     onError?.(
@@ -255,6 +424,9 @@ export async function speakText({
 
 export function stopSpeaking() {
   try {
+    /*
+    AUDIO STOP
+    */
     if (
       activeAudio
     ) {
@@ -267,6 +439,19 @@ export function stopSpeaking() {
 
       activeAudio = null;
     }
+
+    /*
+    BROWSER TTS STOP
+    */
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      window.speechSynthesis.cancel();
+    }
+
+    activeUtterance =
+      null;
 
     speaking =
       false;
@@ -281,6 +466,13 @@ export function stopSpeaking() {
 export function pauseSpeaking() {
   try {
     activeAudio?.pause();
+
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      window.speechSynthesis.pause();
+    }
   } catch (error) {
     console.error(
       "Pause Speaking Error:",
@@ -292,6 +484,13 @@ export function pauseSpeaking() {
 export function resumeSpeaking() {
   try {
     activeAudio?.play();
+
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      window.speechSynthesis.resume();
+    }
   } catch (error) {
     console.error(
       "Resume Speaking Error:",
@@ -308,7 +507,7 @@ export function getAvailableVoices() {
   return [
     {
       name:
-        "Kokoro Female",
+        "AI Female",
 
       lang:
         "en-IN"
@@ -316,7 +515,7 @@ export function getAvailableVoices() {
 
     {
       name:
-        "Kokoro Male",
+        "AI Male",
 
       lang:
         "en-IN"
@@ -324,10 +523,10 @@ export function getAvailableVoices() {
 
     {
       name:
-        "Kokoro Professional",
+        "AI Professional",
 
       lang:
         "en-IN"
     }
   ];
-}
+      }
