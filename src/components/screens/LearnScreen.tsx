@@ -79,9 +79,7 @@ type DebugInfo = {
 
   success?: boolean;
 
-  source?:
-    | "ai"
-    | "fallback";
+  source?: string;
 
   mode?: string;
 
@@ -111,9 +109,6 @@ export default function LearnScreen({
   const [error, setError] =
     useState("");
 
-  /*
-  STABLE DEBUG INFO
-  */
   const [debugInfo,
     setDebugInfo] =
     useState<DebugInfo | null>(
@@ -161,64 +156,50 @@ export default function LearnScreen({
       const data =
         await response.json();
 
-      /*
-      SAFE DEBUG SYSTEM
-      */
-      const lessonData =
-        data?.lesson;
-
-      const debug: DebugInfo =
-        {
-          apiStatus:
-            response.status,
-
-          success:
-            Boolean(
-              data?.success
-            ),
-
-          source:
-            data?.source ||
-            "unknown",
-
-          mode:
-            data?.mode,
-
-          model:
-            data?.model,
-
-          error:
-            data?.error ||
-            "",
-
-          generatedAt:
-            data?.generatedAt,
-
-          sentenceCount:
-            lessonData
-              ?.sentences
-              ?.length || 0,
-
-          vocabularyCount:
-            lessonData
-              ?.vocabulary
-              ?.length || 0
-        };
-
-      setDebugInfo(debug);
-
-      /*
-      CONSOLE DEBUG
-      */
       console.log(
         "LESSON API RESPONSE:",
         data
       );
 
-      console.log(
-        "LESSON DEBUG:",
-        debug
-      );
+      const lessonData =
+        data?.lesson;
+
+      setDebugInfo({
+        apiStatus:
+          response.status,
+
+        success:
+          Boolean(
+            data?.success
+          ),
+
+        source:
+          data?.source ||
+          "unknown",
+
+        mode:
+          data?.mode,
+
+        model:
+          data?.model,
+
+        error:
+          data?.error ||
+          "",
+
+        generatedAt:
+          data?.generatedAt,
+
+        sentenceCount:
+          lessonData
+            ?.sentences
+            ?.length || 0,
+
+        vocabularyCount:
+          lessonData
+            ?.vocabulary
+            ?.length || 0
+      });
 
       if (
         !response.ok ||
@@ -231,9 +212,6 @@ export default function LearnScreen({
         );
       }
 
-      /*
-      VALIDATION
-      */
       if (
         !Array.isArray(
           lessonData.sentences
@@ -481,7 +459,7 @@ export default function LearnScreen({
           </div>
         ) : null}
 
-        {/* STABLE DEBUG PANEL */}
+        {/* DEBUG PANEL */}
         {debugInfo ? (
           <div className="rounded-3xl border border-yellow-500/20 bg-yellow-500/10 p-4">
 
@@ -601,6 +579,7 @@ export default function LearnScreen({
           </div>
         ) : null}
 
+        {/* LESSON */}
         {lesson &&
         currentSentence ? (
           <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
@@ -842,4 +821,15 @@ export default function LearnScreen({
 
         {/* FOOTER */}
         <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-purple-600/10 to-blue-600/10 p-4">
-          <div className="mb-2 f
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles
+              size={16}
+            />
+
+            <h2 className="text-sm font-semibold">
+              AI Learning
+            </h2>
+          </div>
+
+          <p className="text-xs leading-6 text-white/70">
+            Learn English sentence-by-sentence with auto voic
