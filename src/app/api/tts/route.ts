@@ -142,16 +142,9 @@ export async function POST(
           },
 
           body: JSON.stringify({
-            inputs:
-              limitedText,
-
-            parameters: {
-              voice:
-                getVoice(
-                  body.voiceType
-                )
-            }
-          })
+  inputs:
+    limitedText
+})
         }
       );
 
