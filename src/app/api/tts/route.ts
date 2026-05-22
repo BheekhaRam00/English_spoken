@@ -4,7 +4,7 @@ import {
 } from "next/server";
 
 export const runtime =
-  "edge";
+  "nodejs";
 
 export const dynamic =
   "force-dynamic";
@@ -35,7 +35,7 @@ function cleanSpeechText(
     .trim();
 }
 
-function getVoicePrompt(
+function getVoice(
   voiceType:
     | "female"
     | "male"
@@ -43,13 +43,13 @@ function getVoicePrompt(
 ) {
   switch (voiceType) {
     case "male":
-      return "Male English voice with natural speaking tone.";
+      return "am_adam";
 
     case "professional":
-      return "Professional English voice with clear pronunciation and natural pacing.";
+      return "af_bella";
 
     default:
-      return "Natural friendly female English voice with realistic conversation tone.";
+      return "af_sarah";
   }
 }
 
@@ -103,17 +103,12 @@ export async function POST(
     }
 
     /*
-    LIMIT VERY LONG AUDIO
+    LIMIT LONG AUDIO
     */
     const limitedText =
       cleanedText.slice(
         0,
-        900
-      );
-
-    const voicePrompt =
-      getVoicePrompt(
-        body.voiceType
+        700
       );
 
     const response =
@@ -127,15 +122,21 @@ export async function POST(
               `Bearer ${huggingFaceKey}`,
 
             "Content-Type":
-              "application/json"
+              "application/json",
+
+            Accept:
+              "audio/mpeg"
           },
 
           body: JSON.stringify({
-            inputs: limitedText,
+            inputs:
+              limitedText,
 
             parameters: {
-              prompt:
-                voicePrompt
+              voice:
+                getVoice(
+                  body.voiceType
+                )
             }
           })
         }
@@ -155,7 +156,10 @@ export async function POST(
           success: false,
 
           message:
-            "TTS generation failed."
+            "TTS generation failed.",
+
+          error:
+            errorText
         },
         {
           status: 500
