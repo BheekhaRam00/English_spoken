@@ -19,7 +19,7 @@ type TTSRequestBody = {
 };
 
 const HUGGINGFACE_API_URL =
-  "https://router.huggingface.co/hf-inference/models/hexgrad/Kokoro-82M";
+  "https://api-inference.huggingface.co/models/microsoft/speecht5_tts";
 
 function cleanSpeechText(
   text: string
