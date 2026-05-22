@@ -188,9 +188,32 @@ IMPORTANT RULES:
       response.status
     );
 
-    const data:
-      OpenRouterResponse =
-      await response.json();
+    /*
+    RAW RESPONSE FIRST
+    */
+    const rawText =
+      await response.text();
+
+    console.log(
+      "OPENROUTER RAW:",
+      rawText
+    );
+
+    let data:
+      OpenRouterResponse;
+
+    try {
+      data =
+        JSON.parse(
+          rawText
+        );
+    } catch (
+      parseError
+    ) {
+      throw new Error(
+        "Invalid JSON response from OpenRouter"
+      );
+    }
 
     console.log(
       "OPENROUTER DATA:",
