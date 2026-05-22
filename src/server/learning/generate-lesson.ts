@@ -82,11 +82,13 @@ STRICT RULES:
 - Real life conversation.
 - VERY EASY English.
 - Every English sentence MUST have matching Hindi translation.
-- Add ONLY 3 vocabulary words.
+- Add ONLY 3 vocabulary words related to the lesson.
 - Return STRICT VALID JSON ONLY.
 - NO markdown.
 - NO explanation.
 - NO numbering.
+- Vocabulary MUST NOT be fixed or repeated.
+- Generate fresh vocabulary every time.
 
 DO NOT REPEAT THESE LESSONS:
 ${previousLessons.join("\n---\n")}
@@ -259,9 +261,31 @@ function sanitizeLesson(
           (
             item: any
           ) =>
-            item?.word
+            item?.word &&
+            item?.meaning
         )
-        .slice(0, 3),
+        .slice(0, 3)
+        .map(
+          (
+            item: any
+          ) => ({
+            word:
+              String(
+                item.word
+              ).trim(),
+
+            meaning:
+              String(
+                item.meaning
+              ).trim(),
+
+            pronunciation:
+              String(
+                item.pronunciation ||
+                item.word
+              ).trim()
+          })
+        ),
 
     pronunciationTip:
       lesson.pronunciationTip ||
@@ -285,6 +309,11 @@ function parseLesson(
         )
         .trim();
 
+    console.log(
+      "RAW AI RESPONSE:",
+      cleaned
+    );
+
     const jsonStart =
       cleaned.indexOf("{");
 
@@ -297,6 +326,10 @@ function parseLesson(
       jsonStart === -1 ||
       jsonEnd === -1
     ) {
+      console.log(
+        "JSON NOT FOUND"
+      );
+
       return null;
     }
 
@@ -311,19 +344,45 @@ function parseLesson(
         jsonString
       );
 
+    console.log(
+      "PARSED JSON:",
+      parsed
+    );
+
     if (
-      !parsed?.sentences
-        ?.length
+      !parsed?.sentences ||
+      !Array.isArray(
+        parsed.sentences
+      ) ||
+      parsed.sentences.length ===
+        0
     ) {
+      console.log(
+        "INVALID SENTENCES"
+      );
+
       return null;
     }
 
-    return sanitizeLesson(
-      parsed
+    const sanitized =
+      sanitizeLesson(
+        parsed
+      );
+
+    console.log(
+      "SANITIZED LESSON:",
+      sanitized
     );
+
+    return sanitized;
   } catch (error) {
     logError(
       "Lesson Parse Error",
+      error
+    );
+
+    console.log(
+      "PARSE FAILED:",
       error
     );
 
@@ -522,35 +581,35 @@ function generateFallbackLesson(
     vocabulary: [
       {
         word:
-          "Practice",
+          "Conversation",
 
         meaning:
-          "अभ्यास",
+          "बातचीत",
 
         pronunciation:
-          "प्रैक्टिस"
+          "कन्वरसेशन"
       },
 
       {
         word:
-          "Team",
+          "Enjoy",
 
         meaning:
-          "टीम",
+          "आनंद लेना",
 
         pronunciation:
-          "टीम"
+          "एंजॉय"
       },
 
       {
         word:
-          "Meeting",
+          "Planning",
 
         meaning:
-          "बैठक",
+          "योजना",
 
         pronunciation:
-          "मीटिंग"
+          "प्लानिंग"
       }
     ],
 
@@ -573,6 +632,10 @@ export async function generateLesson({
       );
 
     if (!apiKey) {
+      console.log(
+        "NO API KEY FOUND"
+      );
+
       const fallback =
         generateFallbackLesson(
           mode
@@ -596,6 +659,11 @@ export async function generateLesson({
 
     for (const model of MODELS) {
       try {
+        console.log(
+          "TRYING MODEL:",
+          model
+        );
+
         const reply =
           await requestLesson(
             apiKey,
@@ -603,14 +671,26 @@ export async function generateLesson({
             prompt
           );
 
+        const cleanedReply =
+          cleanAIText(
+            reply
+          );
+
+        console.log(
+          "CLEANED AI RESPONSE:",
+          cleanedReply
+        );
+
         const parsed =
           parseLesson(
-            cleanAIText(
-              reply
-            )
+            cleanedReply
           );
 
         if (parsed) {
+          console.log(
+            "AI LESSON SUCCESS"
+          );
+
           rememberLesson(
             mode,
             JSON.stringify(
@@ -620,13 +700,26 @@ export async function generateLesson({
 
           return parsed;
         }
+
+        console.log(
+          "PARSED RESULT NULL"
+        );
       } catch (error) {
         logError(
           `Model Failed: ${model}`,
           error
         );
+
+        console.log(
+          "MODEL ERROR:",
+          error
+        );
       }
     }
+
+    console.log(
+      "USING FALLBACK LESSON"
+    );
 
     return generateFallbackLesson(
       mode
@@ -634,6 +727,11 @@ export async function generateLesson({
   } catch (error) {
     logError(
       "Generate Lesson Error",
+      error
+    );
+
+    console.log(
+      "FINAL GENERATE ERROR:",
       error
     );
 
