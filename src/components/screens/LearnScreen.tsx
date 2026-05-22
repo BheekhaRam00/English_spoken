@@ -87,6 +87,13 @@ export default function LearnScreen({
   const [error, setError] =
     useState("");
 
+  /*
+  DEBUG INFO
+  */
+  const [debugInfo,
+    setDebugInfo] =
+    useState<any>(null);
+
   const [
     currentSentenceIndex,
     setCurrentSentenceIndex
@@ -128,26 +135,54 @@ export default function LearnScreen({
       const data =
         await response.json();
 
+      /*
+      DEBUG CONSOLE
+      */
+      console.log(
+        "LESSON API RESPONSE:",
+        data
+      );
+
+      /*
+      DEBUG UI
+      */
+      setDebugInfo(data);
+
       if (
         !response.ok ||
         !data?.success ||
         !data?.lesson
       ) {
         throw new Error(
+          data?.message ||
           "Lesson load failed."
         );
       }
 
+      /*
+      IMPORTANT DEBUG
+      */
+      console.log(
+        "LESSON SENTENCES:",
+        data.lesson.sentences
+      );
+
+      console.log(
+        "LESSON VOCAB:",
+        data.lesson.vocabulary
+      );
+
       setLesson(
         data.lesson
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error(
         "Lesson Fetch Error:",
         error
       );
 
       setError(
+        error?.message ||
         "Unable to generate lesson."
       );
     } finally {
@@ -342,6 +377,32 @@ export default function LearnScreen({
           )}
         </section>
 
+        {/* ERROR */}
+        {error ? (
+          <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-4">
+            <p className="text-sm text-red-200">
+              {error}
+            </p>
+          </div>
+        ) : null}
+
+        {/* DEBUG */}
+        {debugInfo ? (
+          <div className="rounded-3xl border border-yellow-500/20 bg-yellow-500/10 p-4">
+            <h3 className="mb-2 text-sm font-semibold text-yellow-200">
+              Debug Info
+            </h3>
+
+            <pre className="overflow-x-auto text-[10px] leading-5 text-yellow-100 whitespace-pre-wrap">
+              {JSON.stringify(
+                debugInfo,
+                null,
+                2
+              )}
+            </pre>
+          </div>
+        ) : null}
+
         {lesson &&
         currentSentence ? (
           <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
@@ -439,7 +500,7 @@ export default function LearnScreen({
 
                   <div className="space-y-3">
                     {lesson.vocabulary
-                      .slice(0, 2)
+                      .slice(0, 3)
                       .map(
                         (
                           item
@@ -600,4 +661,4 @@ export default function LearnScreen({
       </div>
     </main>
   );
-}
+            }
