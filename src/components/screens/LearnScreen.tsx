@@ -81,6 +81,10 @@ export default function LearnScreen({
   const [error, setError] =
     useState("");
 
+  const [playingFullLesson,
+    setPlayingFullLesson] =
+    useState(false);
+
   async function fetchLesson() {
     try {
       setLoading(true);
@@ -154,6 +158,51 @@ export default function LearnScreen({
         )
         .slice(0, 5);
     }, [lesson]);
+
+  /*
+  PLAY FULL LESSON
+  */
+  async function playFullLesson() {
+    try {
+      if (
+        playingFullLesson ||
+        !lessonSentences.length
+      ) {
+        return;
+      }
+
+      setPlayingFullLesson(
+        true
+      );
+
+      for (const sentence of lessonSentences) {
+        await speakText({
+          text:
+            sentence
+        });
+
+        /*
+        NATURAL PAUSE
+        */
+        await new Promise(
+          (resolve) =>
+            setTimeout(
+              resolve,
+              500
+            )
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Full Lesson Play Error:",
+        error
+      );
+    } finally {
+      setPlayingFullLesson(
+        false
+      );
+    }
+  }
 
   /*
   COMPACT MOBILE LOADER
@@ -327,19 +376,32 @@ export default function LearnScreen({
 
             {/* FULL AUDIO */}
             <button
-              onClick={() =>
-                speakText({
-                  text:
-                    lesson.english
-                })
+              onClick={
+                playFullLesson
               }
-              className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold"
+              disabled={
+                playingFullLesson
+              }
+              className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold disabled:opacity-60"
             >
-              <Volume2
-                size={18}
-              />
+              {playingFullLesson ? (
+                <>
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                  />
 
-              Listen Full Lesson
+                  Playing Lesson...
+                </>
+              ) : (
+                <>
+                  <Volume2
+                    size={18}
+                  />
+
+                  Listen Full Lesson
+                </>
+              )}
             </button>
 
             {/* HINDI */}
