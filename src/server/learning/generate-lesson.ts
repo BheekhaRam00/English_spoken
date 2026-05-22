@@ -37,6 +37,15 @@ type LessonResponse = {
   vocabulary: VocabularyItem[];
 
   pronunciationTip: string;
+
+  /*
+  DEBUG
+  */
+  source?: string;
+
+  model?: string;
+
+  debug?: string;
 };
 
 type OpenRouterResponse = {
@@ -55,9 +64,9 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 const MODELS = [
-  "meta-llama/llama-3.2-3b-instruct:free",
+  "google/gemma-2-9b-it:free",
   "microsoft/phi-3-mini-128k-instruct:free",
-  "google/gemma-2-9b-it:free"
+  "meta-llama/llama-3.2-3b-instruct:free"
 ];
 
 const RECENT_LESSONS =
@@ -125,9 +134,14 @@ async function requestLesson(
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 9000);
+    }, 15000);
 
   try {
+    console.log(
+      "REQUESTING MODEL:",
+      model
+    );
+
     const response =
       await fetch(
         OPENROUTER_URL,
@@ -186,6 +200,16 @@ async function requestLesson(
     const data:
       OpenRouterResponse =
       await response.json();
+
+    console.log(
+      "MODEL RESPONSE STATUS:",
+      response.status
+    );
+
+    console.log(
+      "MODEL RESPONSE DATA:",
+      data
+    );
 
     if (!response.ok) {
       throw new Error(
@@ -420,7 +444,8 @@ function getRecentLessons(
 }
 
 function generateFallbackLesson(
-  mode: string
+  mode: string,
+  reason = "Unknown fallback reason"
 ): LessonResponse {
   const fallbackLessons = {
     beginner: {
@@ -614,7 +639,16 @@ function generateFallbackLesson(
     ],
 
     pronunciationTip:
-      "Speak slowly and confidently."
+      "Speak slowly and confidently.",
+
+    source:
+      "fallback",
+
+    model:
+      "fallback",
+
+    debug:
+      reason
   };
 }
 
@@ -636,19 +670,10 @@ export async function generateLesson({
         "NO API KEY FOUND"
       );
 
-      const fallback =
-        generateFallbackLesson(
-          mode
-        );
-
-      rememberLesson(
+      return generateFallbackLesson(
         mode,
-        JSON.stringify(
-          fallback.sentences
-        )
+        "OPENROUTER_API_KEY missing"
       );
-
-      return fallback;
     }
 
     const prompt =
@@ -698,13 +723,23 @@ export async function generateLesson({
             )
           );
 
-          return parsed;
+          return {
+            ...parsed,
+
+            source:
+              "ai",
+
+            model,
+
+            debug:
+              "AI generation success"
+          };
         }
 
         console.log(
           "PARSED RESULT NULL"
         );
-      } catch (error) {
+      } catch (error: any) {
         logError(
           `Model Failed: ${model}`,
           error
@@ -722,9 +757,10 @@ export async function generateLesson({
     );
 
     return generateFallbackLesson(
-      mode
+      mode,
+      "All models failed"
     );
-  } catch (error) {
+  } catch (error: any) {
     logError(
       "Generate Lesson Error",
       error
@@ -736,7 +772,9 @@ export async function generateLesson({
     );
 
     return generateFallbackLesson(
-      mode
+      mode,
+      error?.message ||
+        "Unknown generate error"
     );
   }
 }
