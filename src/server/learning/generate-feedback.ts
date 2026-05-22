@@ -44,22 +44,21 @@ You are an expert spoken English evaluator for Indian learners.
 
 Analyze the user's spoken English.
 
-Mode:
+MODE:
 ${mode}
 
-User Transcript:
+USER TRANSCRIPT:
 ${transcript}
 
-Requirements:
-- Evaluate spoken English naturally.
-- Encourage confidence.
-- Keep feedback practical.
-- Avoid harsh criticism.
-- Focus on fluency and pronunciation.
+STRICT RULES:
+- Encourage confidence naturally.
+- Give practical feedback.
+- Focus on spoken English.
+- Return STRICT JSON ONLY.
+- NO markdown.
+- NO explanation outside JSON.
 
-Return STRICT JSON only.
-
-JSON Format:
+VALID JSON FORMAT:
 {
   "score": 0,
   "fluency": "",
@@ -73,51 +72,71 @@ JSON Format:
 
 function parseFeedback(
   text: string
-): FeedbackResponse | null {
-  try {
-    const cleaned =
-      text
-        .replace(
-          /```json/g,
-          ""
-        )
-        .replace(
-          /```/g,
-          ""
-        )
-        .trim();
+): FeedbackResponse {
+  const cleaned =
+    text
+      .replace(
+        /```json/gi,
+        ""
+      )
+      .replace(
+        /```/g,
+        ""
+      )
+      .trim();
 
-    return JSON.parse(
+  console.log(
+    "RAW FEEDBACK RESPONSE:",
+    cleaned
+  );
+
+  const parsed =
+    JSON.parse(
       cleaned
     );
-  } catch (error) {
-    logError(
-      "Feedback Parse Error",
-      error
+
+  if (
+    typeof parsed?.score !==
+      "number"
+  ) {
+    throw new Error(
+      "Invalid feedback score"
     );
-
-    return null;
   }
-}
 
-function generateFallbackFeedback(): FeedbackResponse {
   return {
-    score: 82,
+    score:
+      parsed.score,
 
     fluency:
-      "Your speaking flow is improving well.",
+      String(
+        parsed.fluency ||
+          ""
+      ).trim(),
 
     pronunciation:
-      "Most words are understandable and clear.",
+      String(
+        parsed.pronunciation ||
+          ""
+      ).trim(),
 
     grammar:
-      "Your sentence structure is mostly correct.",
+      String(
+        parsed.grammar ||
+          ""
+      ).trim(),
 
     confidence:
-      "You are speaking with good confidence.",
+      String(
+        parsed.confidence ||
+          ""
+      ).trim(),
 
     improvement:
-      "Practice speaking slowly and consistently every day."
+      String(
+        parsed.improvement ||
+          ""
+      ).trim()
   };
 }
 
@@ -129,7 +148,9 @@ export async function generateFeedback({
     if (
       !transcript.trim()
     ) {
-      return generateFallbackFeedback();
+      throw new Error(
+        "Transcript missing"
+      );
     }
 
     const apiKey =
@@ -137,7 +158,9 @@ export async function generateFeedback({
         .OPENROUTER_API_KEY;
 
     if (!apiKey) {
-      return generateFallbackFeedback();
+      throw new Error(
+        "OPENROUTER_API_KEY missing"
+      );
     }
 
     const aiReply =
@@ -153,7 +176,14 @@ export async function generateFeedback({
         history: [],
 
         mode:
-          "daily"
+          mode ===
+            "beginner" ||
+          mode ===
+            "office" ||
+          mode ===
+            "pronunciation"
+            ? "daily"
+            : mode
       });
 
     const cleanedReply =
@@ -166,12 +196,6 @@ export async function generateFeedback({
         cleanedReply
       );
 
-    if (
-      !parsedFeedback
-    ) {
-      return generateFallbackFeedback();
-    }
-
     return parsedFeedback;
   } catch (error) {
     logError(
@@ -179,6 +203,6 @@ export async function generateFeedback({
       error
     );
 
-    return generateFallbackFeedback();
+    throw error;
   }
 }
