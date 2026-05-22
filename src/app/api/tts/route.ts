@@ -22,8 +22,7 @@ type TTSRequestBody = {
 WORKING HF TTS MODEL
 */
 const HUGGINGFACE_API_URL =
-  "https://api-inference.huggingface.co/models/espnet/kan-bayashi_ljspeech_vits";
-
+  "https://router.huggingface.co/hf-inference/models/espnet/kan-bayashi_ljspeech_vits";
 function cleanSpeechText(
   text: string
 ) {
