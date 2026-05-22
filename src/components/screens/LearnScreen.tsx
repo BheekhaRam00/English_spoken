@@ -459,431 +459,97 @@ export default function LearnScreen({
           </div>
         ) : null}
 
-        {/* DEBUG PANEL */}
-        {debugInfo ? (
-          <div className="rounded-3xl border border-yellow-500/20 bg-yellow-500/10 p-4">
+              {/* DEBUG PANEL */}
+{debugInfo ? (
+  <div className="rounded-3xl border border-yellow-500/20 bg-yellow-500/10 p-4">
 
-            <div className="mb-3 flex items-center gap-2">
-              <Brain
-                size={16}
-                className="text-yellow-300"
-              />
+    <div className="mb-3 flex items-center gap-2">
+      <Brain
+        size={16}
+        className="text-yellow-300"
+      />
 
-              <h3 className="text-sm font-semibold text-yellow-200">
-                System Debug
-              </h3>
-            </div>
+      <h3 className="text-sm font-semibold text-yellow-200">
+        System Debug
+      </h3>
+    </div>
 
-            <div className="space-y-2 text-xs">
+    <div className="space-y-2 text-xs">
 
-              <div className="flex items-center justify-between">
-                <span className="text-white/60">
-                  API Status
-                </span>
+      <div className="flex items-center justify-between">
+        <span className="text-white/60">
+          API Status
+        </span>
 
-                <span className="font-semibold">
-                  {
-                    debugInfo.apiStatus
-                  }
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-white/60">
-                  Request
-                </span>
-
-                <span className={`flex items-center gap-1 font-semibold ${
-                  debugInfo.success
-                    ? "text-green-300"
-                    : "text-red-300"
-                }`}>
-                  {debugInfo.success ? (
-                    <CheckCircle
-                      size={12}
-                    />
-                  ) : (
-                    <AlertTriangle
-                      size={12}
-                    />
-                  )}
-
-                  {debugInfo.success
-                    ? "Success"
-                    : "Failed"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-white/60">
-                  Lesson Source
-                </span>
-
-                <span className={`font-semibold ${
-                  debugInfo.source ===
-                  "ai"
-                    ? "text-green-300"
-                    : "text-orange-300"
-                }`}>
-                  {
-                    debugInfo.source
-                  }
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-white/60">
-                  AI Model
-                </span>
-
-                <span className="max-w-[180px] truncate text-right text-white/90">
-                  {debugInfo.model ||
-                    "Unknown"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-white/60">
-                  Sentences
-                </span>
-
-                <span className="font-semibold">
-                  {
-                    debugInfo.sentenceCount
-                  }
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-white/60">
-                  Vocabulary
-                </span>
-
-                <span className="font-semibold">
-                  {
-                    debugInfo.vocabularyCount
-                  }
-                </span>
-              </div>
-
-              {debugInfo.error ? (
-                <div className="mt-3 rounded-2xl bg-red-500/10 p-3">
-                  <p className="text-[11px] leading-5 text-red-200">
-                    {
-                      debugInfo.error
-                    }
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
-        {/* LESSON */}
-        {lesson &&
-        currentSentence ? (
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-
-            {/* TOP */}
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-3 py-2 text-xs font-semibold">
-                <BookOpen
-                  size={14}
-                />
-
-                <span>
-                  {lesson.title ||
-                    "AI Lesson"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1 text-xs text-white/70">
-                <Brain
-                  size={14}
-                />
-
-                <span>
-                  Live AI
-                </span>
-              </div>
-            </div>
-
-            {/* PROGRESS */}
-            <div className="mb-4 flex items-center justify-between text-xs text-white/60">
-              <span>
-                Sentence{" "}
-                {currentSentenceIndex +
-                  1}
-                /
-                {
-                  lesson.sentences
-                    .length
-                }
-              </span>
-
-              <span>
-                Auto Voice Enabled
-              </span>
-            </div>
-
-            {/* SENTENCE CARD */}
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-
-              <div className="mb-5 flex items-start justify-between gap-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-bold">
-                  {currentSentenceIndex +
-                    1}
-                </div>
-
-                <button
-                  onClick={
-                    handleReplay
-                  }
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10"
-                >
-                  <Volume2
-                    size={18}
-                  />
-                </button>
-              </div>
-
-              {/* ENGLISH */}
-              <p className="text-xl font-semibold leading-9 text-white">
-                {
-                  currentSentence.english
-                }
-              </p>
-
-              {/* HINDI */}
-              <div className="mt-5 rounded-2xl border border-white/5 bg-white/5 p-4">
-                <h3 className="mb-2 text-sm font-semibold text-white">
-                  Hindi Meaning
-                </h3>
-
-                <p className="text-sm leading-7 text-white/75">
-                  {
-                    currentSentence.hindi
-                  }
-                </p>
-              </div>
-
-              {/* VOCAB */}
-              {lesson.vocabulary
-                ?.length ? (
-                <div className="mt-5">
-                  <h3 className="mb-3 text-sm font-semibold">
-                    Vocabulary
-                  </h3>
-
-                  <div className="space-y-3">
-                    {lesson.vocabulary
-                      .slice(0, 3)
-                      .map(
-                        (
-                          item
-                        ) => (
-                          <div
-                            key={
-                              item.word
-                            }
-                            className="rounded-2xl border border-white/5 bg-white/5 p-3"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <h4 className="text-sm font-semibold">
-                                  {
-                                    item.word
-                                  }
-                                </h4>
-
-                                <p className="mt-1 text-xs text-white/70">
-                                  {
-                                    item.meaning
-                                  }
-                                </p>
-                              </div>
-
-                              <button
-                                onClick={() =>
-                                  speakText(
-                                    {
-                                      text:
-                                        item.word
-                                    }
-                                  )
-                                }
-                                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"
-                              >
-                                <Volume2
-                                  size={
-                                    15
-                                  }
-                                />
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      )}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* TIP */}
-              <div className="mt-5 rounded-2xl border border-green-500/20 bg-green-500/10 p-4">
-                <div className="flex gap-3">
-                  <CheckCircle2
-                    size={18}
-                    className="mt-0.5 shrink-0"
-                  />
-
-                  <div>
-                    <h3 className="text-sm font-semibold">
-                      Practice Tip
-                    </h3>
-
-                    <p className="mt-1 text-xs leading-6 text-white/75">
-                      {lesson.pronunciationTip ||
-                        "Speak slowly and confidently."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* NAVIGATION */}
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                onClick={
-                  handlePreviousSentence
-                }
-                disabled={
-                  currentSentenceIndex ===
-                  0
-                }
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold disabled:opacity-40"
-              >
-                <ChevronLeft
-                  size={18}
-                />
-
-                Previous
-              </button>
-
-              <button
-                onClick={
-                  handleNextSentence
-                }
-                disabled={
-                  currentSentenceIndex ===
-                  lesson.sentences
-                    .length -
-                    1
-                }
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold disabled:opacity-40"
-              >
-                Next
-
-                <ChevronRight
-                  size={18}
-                />
-              </button>
-            </div>
-          </section>
-        ) : null}
-
-        {/* GENERATE */}
-        <button
-          onClick={
-            fetchLesson
-          }
-          disabled={loading}
-          className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold transition hover:opacity-90 disabled:opacity-60"
-        >
-          {loading ? (
-            <>
-              <Loader2
-                size={18}
-                className="animate-spin"
-              />
-
-              Generating...
-            </>
-          ) : (
-            <>
-              <RefreshCw
-                size={18}
-              />
-
-              New AI Lesson
-            </>
-          )}
-        </button>
-
- <div className="space-y-1 text-xs text-white/70">
-
-  <div className="flex justify-between">
-    <span>API Status</span>
-
-    <span>
-      {debugInfo?.success
-        ? "200 Success"
-        : "Failed"}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span>Lesson Source</span>
-
-    <span>
-      {debugInfo?.lesson
-        ?.source ||
-        "missing"}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span>AI Model</span>
-
-    <span className="max-w-[150px] truncate text-right">
-      {debugInfo?.lesson
-        ?.model ||
-        "missing"}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span>Debug</span>
-
-    <span className="max-w-[170px] truncate text-right">
-      {debugInfo?.lesson
-        ?.debug ||
-        "missing"}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span>Sentences</span>
-
-    <span>
-      {debugInfo?.lesson
-        ?.sentences
-        ?.length || 0}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span>Vocabulary</span>
-
-    <span>
-      {debugInfo?.lesson
-        ?.vocabulary
-        ?.length || 0}
-    </span>
-  </div>
-
-</div>
-
+        <span className="font-semibold">
+          {debugInfo.apiStatus}
+        </span>
       </div>
-    </main>
-  );
-}
+
+      <div className="flex items-center justify-between">
+        <span className="text-white/60">
+          Request
+        </span>
+
+        <span className={`font-semibold ${
+          debugInfo.success
+            ? "text-green-300"
+            : "text-red-300"
+        }`}>
+          {debugInfo.success
+            ? "Success"
+            : "Failed"}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-white/60">
+          Lesson Source
+        </span>
+
+        <span className="font-semibold text-yellow-200">
+          {debugInfo.source || "unknown"}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-white/60">
+          AI Model
+        </span>
+
+        <span className="max-w-[180px] truncate text-right text-white/90">
+          {debugInfo.model || "unknown"}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-white/60">
+          Sentences
+        </span>
+
+        <span className="font-semibold">
+          {debugInfo.sentenceCount}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-white/60">
+          Vocabulary
+        </span>
+
+        <span className="font-semibold">
+          {debugInfo.vocabularyCount}
+        </span>
+      </div>
+
+      {debugInfo.error ? (
+        <div className="mt-3 rounded-2xl bg-red-500/10 p-3">
+          <p className="text-[11px] leading-5 text-red-200">
+            {debugInfo.error}
+          </p>
+        </div>
+      ) : null}
+
+    </div>
+  </div>
+) : null}
