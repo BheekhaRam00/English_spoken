@@ -115,7 +115,8 @@ export async function GET(
     */
     if (
       !lesson ||
-      !lesson.english
+      !lesson.sentences ||
+      !lesson.sentences.length
     ) {
       throw new Error(
         "Invalid lesson generated."
