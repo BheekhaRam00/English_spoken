@@ -57,12 +57,45 @@ async function fetchTTSAudio({
 
         body: JSON.stringify({
           text,
-
           voiceType
         })
       }
     );
 
+  /*
+  READ CONTENT TYPE
+  */
+  const contentType =
+    response.headers.get(
+      "content-type"
+    ) || "";
+
+  /*
+  HANDLE JSON ERRORS
+  */
+  if (
+    contentType.includes(
+      "application/json"
+    )
+  ) {
+    const errorData =
+      await response.json();
+
+    console.error(
+      "TTS API Error:",
+      errorData
+    );
+
+    throw new Error(
+      errorData?.error ||
+        errorData?.message ||
+        "TTS failed."
+    );
+  }
+
+  /*
+  HANDLE BAD RESPONSE
+  */
   if (!response.ok) {
     throw new Error(
       "TTS request failed."
@@ -71,6 +104,17 @@ async function fetchTTSAudio({
 
   const audioBlob =
     await response.blob();
+
+  /*
+  INVALID AUDIO CHECK
+  */
+  if (
+    audioBlob.size < 1000
+  ) {
+    throw new Error(
+      "Invalid audio response."
+    );
+  }
 
   return URL.createObjectURL(
     audioBlob
@@ -124,17 +168,21 @@ export async function speakText({
       );
 
     const audio =
-      new Audio(
-        audioUrl
-      );
+      new Audio();
 
     activeAudio =
       audio;
+
+    audio.src =
+      audioUrl;
 
     audio.preload =
       "auto";
 
     audio.volume = 1;
+
+    audio.crossOrigin =
+      "anonymous";
 
     audio.onplay =
       () => {
@@ -177,7 +225,12 @@ export async function speakText({
       };
 
     /*
-    MOBILE SAFETY
+    FORCE LOAD
+    */
+    audio.load();
+
+    /*
+    MOBILE SAFE PLAY
     */
     await audio.play();
   } catch (error) {
@@ -193,7 +246,9 @@ export async function speakText({
       null;
 
     onError?.(
-      "Unable to generate voice."
+      error instanceof Error
+        ? error.message
+        : "Unable to generate voice."
     );
   }
 }
@@ -207,6 +262,8 @@ export function stopSpeaking() {
 
       activeAudio.currentTime =
         0;
+
+      activeAudio.src = "";
 
       activeAudio = null;
     }
