@@ -7,14 +7,6 @@ export type SpeakTextOptions =
       | "male"
       | "professional";
 
-    language?: string;
-
-    rate?: number;
-
-    pitch?: number;
-
-    volume?: number;
-
     onStart?: () => void;
 
     onEnd?: () => void;
@@ -24,191 +16,72 @@ export type SpeakTextOptions =
     ) => void;
   };
 
-let voicesLoaded =
-  false;
-
-let activeUtterance:
-  | SpeechSynthesisUtterance
+let activeAudio:
+  | HTMLAudioElement
   | null = null;
 
 let speaking =
   false;
 
-function loadVoices() {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return [];
-  }
-
-  const synth =
-    window.speechSynthesis;
-
-  let voices =
-    synth.getVoices();
-
-  /*
-  MOBILE FIX
-  */
-  if (
-    voices.length === 0 &&
-    !voicesLoaded
-  ) {
-    voicesLoaded = true;
-
-    synth.onvoiceschanged =
-      () => {
-        voices =
-          synth.getVoices();
-      };
-  }
-
-  return voices;
-}
-
-function findBestVoice(
-  voiceType:
-    | "female"
-    | "male"
-    | "professional"
-) {
-  const voices =
-    loadVoices();
-
-  if (!voices.length) {
-    return null;
-  }
-
-  /*
-  PRIORITY:
-  1. English India
-  2. English US/UK
-  */
-
-  const englishVoices =
-    voices.filter(
-      (voice) =>
-        voice.lang
-          .toLowerCase()
-          .includes(
-            "en"
-          )
-    );
-
-  const indianVoices =
-    englishVoices.filter(
-      (voice) =>
-        voice.lang
-          .toLowerCase()
-          .includes(
-            "in"
-          )
-    );
-
-  const preferredVoices =
-    indianVoices.length
-      ? indianVoices
-      : englishVoices;
-
-  const femalePriority =
-    [
-      "heera",
-      "swara",
-      "female",
-      "samantha",
-      "zira"
-    ];
-
-  const malePriority =
-    [
-      "prabhat",
-      "male",
-      "daniel",
-      "alex",
-      "david"
-    ];
-
-  const professionalPriority =
-    [
-      "google",
-      "microsoft",
-      "zira",
-      "daniel"
-    ];
-
-  let priorities:
-    string[] = [];
-
-  if (
-    voiceType ===
-    "female"
-  ) {
-    priorities =
-      femalePriority;
-  } else if (
-    voiceType ===
-    "male"
-  ) {
-    priorities =
-      malePriority;
-  } else {
-    priorities =
-      professionalPriority;
-  }
-
-  for (const name of priorities) {
-    const matched =
-      preferredVoices.find(
-        (voice) =>
-          voice.name
-            .toLowerCase()
-            .includes(
-              name
-            )
-      );
-
-    if (matched) {
-      return matched;
-    }
-  }
-
-  return (
-    preferredVoices[0] ||
-    voices[0] ||
-    null
-  );
-}
-
 function cleanSpeechText(
   text: string
 ) {
   return text
-    .replace(
-      /\s+/g,
-      " "
-    )
-    .replace(
-      /\n+/g,
-      ". "
-    )
+    .replace(/\r/g, "")
+    .replace(/\n+/g, ". ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-export function speakText({
+async function fetchTTSAudio({
+  text,
+  voiceType
+}: {
+  text: string;
+
+  voiceType:
+    | "female"
+    | "male"
+    | "professional";
+}) {
+  const response =
+    await fetch(
+      "/api/tts",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+          text,
+
+          voiceType
+        })
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      "TTS request failed."
+    );
+  }
+
+  const audioBlob =
+    await response.blob();
+
+  return URL.createObjectURL(
+    audioBlob
+  );
+}
+
+export async function speakText({
   text,
 
   voiceType =
     "female",
-
-  language =
-    "en-IN",
-
-  rate,
-
-  pitch,
-
-  volume = 1,
 
   onStart,
 
@@ -224,19 +97,6 @@ export function speakText({
       return;
     }
 
-    if (
-      !(
-        "speechSynthesis" in
-        window
-      )
-    ) {
-      onError?.(
-        "Speech synthesis is not supported."
-      );
-
-      return;
-    }
-
     const cleanedText =
       cleanSpeechText(
         text
@@ -248,81 +108,35 @@ export function speakText({
       return;
     }
 
-    const synth =
-      window.speechSynthesis;
-
     /*
-    HARD RESET
-    PREVENT:
-    - overlap
-    - double voice
-    - stuck speech
+    STOP OLD AUDIO
     */
-    synth.cancel();
+    stopSpeaking();
 
-    speaking =
-      false;
+    const audioUrl =
+      await fetchTTSAudio(
+        {
+          text:
+            cleanedText,
 
-    activeUtterance =
-      null;
-
-    const utterance =
-      new SpeechSynthesisUtterance(
-        cleanedText
+          voiceType
+        }
       );
 
-    activeUtterance =
-      utterance;
-
-    utterance.lang =
-      language;
-
-    utterance.volume =
-      volume;
-
-    /*
-    NATURAL SETTINGS
-    */
-
-    if (
-      voiceType ===
-      "female"
-    ) {
-      utterance.rate =
-        rate ?? 0.93;
-
-      utterance.pitch =
-        pitch ?? 1.02;
-    } else if (
-      voiceType ===
-      "male"
-    ) {
-      utterance.rate =
-        rate ?? 0.9;
-
-      utterance.pitch =
-        pitch ?? 0.94;
-    } else {
-      utterance.rate =
-        rate ?? 0.91;
-
-      utterance.pitch =
-        pitch ?? 0.98;
-    }
-
-    const selectedVoice =
-      findBestVoice(
-        voiceType
+    const audio =
+      new Audio(
+        audioUrl
       );
 
-    if (
-      selectedVoice
-    ) {
-      utterance.voice =
-        selectedVoice;
-    }
+    activeAudio =
+      audio;
 
-    utterance.onstart =
+    audio.preload =
+      "auto";
+
+    audio.volume = 1;
+
+    audio.onplay =
       () => {
         speaking =
           true;
@@ -330,64 +144,56 @@ export function speakText({
         onStart?.();
       };
 
-    utterance.onend =
+    audio.onended =
       () => {
         speaking =
           false;
 
-        activeUtterance =
+        URL.revokeObjectURL(
+          audioUrl
+        );
+
+        activeAudio =
           null;
 
         onEnd?.();
       };
 
-    utterance.onerror =
-      (
-        event
-      ) => {
+    audio.onerror =
+      () => {
         speaking =
           false;
 
-        activeUtterance =
+        URL.revokeObjectURL(
+          audioUrl
+        );
+
+        activeAudio =
           null;
 
-        /*
-        IGNORE SAFE ERRORS
-        */
-        if (
-          event.error ===
-          "interrupted"
-        ) {
-          return;
-        }
-
         onError?.(
-          "Voice playback failed."
+          "Audio playback failed."
         );
       };
 
     /*
-    MOBILE ANDROID FIX
+    MOBILE SAFETY
     */
-    setTimeout(() => {
-      try {
-        synth.speak(
-          utterance
-        );
-      } catch (error) {
-        onError?.(
-          "Unable to play voice."
-        );
-      }
-    }, 120);
+    await audio.play();
   } catch (error) {
     console.error(
-      "Speech Synthesis Error:",
+      "Kokoro Speech Error:",
       error
     );
 
+    speaking =
+      false;
+
+    activeAudio =
+      null;
+
     onError?.(
-      "Unable to play voice."
+      "Unable to generate voice."
     );
   }
 }
@@ -395,19 +201,18 @@ export function speakText({
 export function stopSpeaking() {
   try {
     if (
-      typeof window ===
-      "undefined"
+      activeAudio
     ) {
-      return;
-    }
+      activeAudio.pause();
 
-    window.speechSynthesis.cancel();
+      activeAudio.currentTime =
+        0;
+
+      activeAudio = null;
+    }
 
     speaking =
       false;
-
-    activeUtterance =
-      null;
   } catch (error) {
     console.error(
       "Stop Speaking Error:",
@@ -418,14 +223,7 @@ export function stopSpeaking() {
 
 export function pauseSpeaking() {
   try {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
-      return;
-    }
-
-    window.speechSynthesis.pause();
+    activeAudio?.pause();
   } catch (error) {
     console.error(
       "Pause Speaking Error:",
@@ -436,14 +234,7 @@ export function pauseSpeaking() {
 
 export function resumeSpeaking() {
   try {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
-      return;
-    }
-
-    window.speechSynthesis.resume();
+    activeAudio?.play();
   } catch (error) {
     console.error(
       "Resume Speaking Error:",
@@ -457,20 +248,29 @@ export function isSpeaking() {
 }
 
 export function getAvailableVoices() {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return [];
-  }
-
-  return window.speechSynthesis
-    .getVoices()
-    .map((voice) => ({
+  return [
+    {
       name:
-        voice.name,
+        "Kokoro Female",
 
       lang:
-        voice.lang
-    }));
+        "en-IN"
+    },
+
+    {
+      name:
+        "Kokoro Male",
+
+      lang:
+        "en-IN"
+    },
+
+    {
+      name:
+        "Kokoro Professional",
+
+      lang:
+        "en-IN"
+    }
+  ];
 }
