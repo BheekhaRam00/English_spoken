@@ -38,9 +38,6 @@ type LessonResponse = {
 
   pronunciationTip: string;
 
-  /*
-  DEBUG
-  */
   source?: string;
 
   model?: string;
@@ -65,7 +62,9 @@ const OPENROUTER_URL =
 
 const MODELS = [
   "google/gemma-2-9b-it:free",
+
   "microsoft/phi-3-mini-128k-instruct:free",
+
   "meta-llama/llama-3.2-3b-instruct:free"
 ];
 
@@ -96,8 +95,8 @@ STRICT RULES:
 - NO markdown.
 - NO explanation.
 - NO numbering.
-- Vocabulary MUST NOT be fixed or repeated.
-- Generate fresh vocabulary every time.
+- Vocabulary MUST NOT repeat.
+- Generate fresh lesson every time.
 
 DO NOT REPEAT THESE LESSONS:
 ${previousLessons.join("\n---\n")}
@@ -134,7 +133,7 @@ async function requestLesson(
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 15000);
+    }, 20000);
 
   try {
     console.log(
@@ -172,7 +171,7 @@ async function requestLesson(
 
             top_p: 0.95,
 
-            max_tokens: 260,
+            max_tokens: 320,
 
             frequency_penalty: 0.6,
 
@@ -183,7 +182,7 @@ async function requestLesson(
                 role: "system",
 
                 content:
-                  "You generate spoken English learning JSON."
+                  "You generate spoken English learning lessons in STRICT JSON only."
               },
 
               {
@@ -197,19 +196,35 @@ async function requestLesson(
         }
       );
 
-    const data:
-      OpenRouterResponse =
-      await response.json();
-
     console.log(
-      "MODEL RESPONSE STATUS:",
+      "MODEL STATUS:",
       response.status
     );
 
+    /*
+    RAW RESPONSE FIRST
+    */
+    const rawText =
+      await response.text();
+
     console.log(
-      "MODEL RESPONSE DATA:",
-      data
+      "RAW RESPONSE:",
+      rawText
     );
+
+    let data:
+      OpenRouterResponse;
+
+    try {
+      data =
+        JSON.parse(
+          rawText
+        );
+    } catch {
+      throw new Error(
+        "Invalid JSON response from OpenRouter"
+      );
+    }
 
     if (!response.ok) {
       throw new Error(
@@ -334,7 +349,7 @@ function parseLesson(
         .trim();
 
     console.log(
-      "RAW AI RESPONSE:",
+      "RAW AI CONTENT:",
       cleaned
     );
 
@@ -350,11 +365,9 @@ function parseLesson(
       jsonStart === -1 ||
       jsonEnd === -1
     ) {
-      console.log(
-        "JSON NOT FOUND"
+      throw new Error(
+        "JSON boundaries not found"
       );
-
-      return null;
     }
 
     const jsonString =
@@ -368,11 +381,6 @@ function parseLesson(
         jsonString
       );
 
-    console.log(
-      "PARSED JSON:",
-      parsed
-    );
-
     if (
       !parsed?.sentences ||
       !Array.isArray(
@@ -381,36 +389,21 @@ function parseLesson(
       parsed.sentences.length ===
         0
     ) {
-      console.log(
-        "INVALID SENTENCES"
+      throw new Error(
+        "Invalid lesson sentences"
       );
-
-      return null;
     }
 
-    const sanitized =
-      sanitizeLesson(
-        parsed
-      );
-
-    console.log(
-      "SANITIZED LESSON:",
-      sanitized
+    return sanitizeLesson(
+      parsed
     );
-
-    return sanitized;
   } catch (error) {
     logError(
       "Lesson Parse Error",
       error
     );
 
-    console.log(
-      "PARSE FAILED:",
-      error
-    );
-
-    return null;
+    throw error;
   }
 }
 
@@ -443,338 +436,107 @@ function getRecentLessons(
   );
 }
 
-function generateFallbackLesson(
-  mode: string,
-  reason = "Unknown fallback reason"
-): LessonResponse {
-  const fallbackLessons = {
-    beginner: {
-      title:
-        "Simple English",
-
-      sentences: [
-        {
-          english:
-            "Hello",
-
-          hindi:
-            "हेलो"
-        },
-
-        {
-          english:
-            "What is your name",
-
-          hindi:
-            "आपका नाम क्या है"
-        },
-
-        {
-          english:
-            "My name is Ravi",
-
-          hindi:
-            "मेरा नाम रवि है"
-        },
-
-        {
-          english:
-            "I am learning English",
-
-          hindi:
-            "मैं अंग्रेजी सीख रहा हूँ"
-        },
-
-        {
-          english:
-            "Nice to meet you",
-
-          hindi:
-            "आपसे मिलकर अच्छा लगा"
-        }
-      ]
-    },
-
-    daily: {
-      title:
-        "Friends Conversation",
-
-      sentences: [
-        {
-          english:
-            "Hello my friend",
-
-          hindi:
-            "हेलो मेरे दोस्त"
-        },
-
-        {
-          english:
-            "What are you doing",
-
-          hindi:
-            "आप क्या कर रहे हैं"
-        },
-
-        {
-          english:
-            "I am watching a movie",
-
-          hindi:
-            "मैं फिल्म देख रहा हूँ"
-        },
-
-        {
-          english:
-            "That sounds fun",
-
-          hindi:
-            "यह मजेदार लगता है"
-        },
-
-        {
-          english:
-            "Enjoy your day",
-
-          hindi:
-            "अपने दिन का आनंद लें"
-        }
-      ]
-    },
-
-    office: {
-      title:
-        "Office Meeting",
-
-      sentences: [
-        {
-          english:
-            "The meeting will start now",
-
-          hindi:
-            "मीटिंग अब शुरू होगी"
-        },
-
-        {
-          english:
-            "Please open the report",
-
-          hindi:
-            "कृपया रिपोर्ट खोलें"
-        },
-
-        {
-          english:
-            "We need better planning",
-
-          hindi:
-            "हमें बेहतर योजना चाहिए"
-        },
-
-        {
-          english:
-            "Let's complete the work today",
-
-          hindi:
-            "आइए आज काम पूरा करें"
-        },
-
-        {
-          english:
-            "Thank you everyone",
-
-          hindi:
-            "सभी का धन्यवाद"
-        }
-      ]
-    }
-  };
-
-  const lesson =
-    fallbackLessons[
-      mode as keyof typeof fallbackLessons
-    ] ||
-    fallbackLessons.daily;
-
-  return {
-    title:
-      lesson.title,
-
-    sentences:
-      lesson.sentences,
-
-    vocabulary: [
-      {
-        word:
-          "Conversation",
-
-        meaning:
-          "बातचीत",
-
-        pronunciation:
-          "कन्वरसेशन"
-      },
-
-      {
-        word:
-          "Enjoy",
-
-        meaning:
-          "आनंद लेना",
-
-        pronunciation:
-          "एंजॉय"
-      },
-
-      {
-        word:
-          "Planning",
-
-        meaning:
-          "योजना",
-
-        pronunciation:
-          "प्लानिंग"
-      }
-    ],
-
-    pronunciationTip:
-      "Speak slowly and confidently.",
-
-    source:
-      "fallback",
-
-    model:
-      "fallback",
-
-    debug:
-      reason
-  };
-}
-
 export async function generateLesson({
   mode
 }: GenerateLessonParams) {
-  try {
-    const apiKey =
-      process.env
-        .OPENROUTER_API_KEY;
+  const apiKey =
+    process.env
+      .OPENROUTER_API_KEY;
 
-    const previousLessons =
-      getRecentLessons(
-        mode
-      );
+  if (!apiKey) {
+    throw new Error(
+      "OPENROUTER_API_KEY missing"
+    );
+  }
 
-    if (!apiKey) {
+  const previousLessons =
+    getRecentLessons(
+      mode
+    );
+
+  const prompt =
+    buildLessonPrompt(
+      mode,
+      previousLessons
+    );
+
+  let lastError:
+    unknown = null;
+
+  for (const model of MODELS) {
+    try {
       console.log(
-        "NO API KEY FOUND"
+        "TRYING MODEL:",
+        model
       );
 
-      return generateFallbackLesson(
-        mode,
-        "OPENROUTER_API_KEY missing"
-      );
-    }
-
-    const prompt =
-      buildLessonPrompt(
-        mode,
-        previousLessons
-      );
-
-    for (const model of MODELS) {
-      try {
-        console.log(
-          "TRYING MODEL:",
-          model
+      const reply =
+        await requestLesson(
+          apiKey,
+          model,
+          prompt
         );
 
-        const reply =
-          await requestLesson(
-            apiKey,
-            model,
-            prompt
-          );
+      const cleanedReply =
+        cleanAIText(
+          reply
+        );
 
-        const cleanedReply =
-          cleanAIText(
-            reply
-          );
+      console.log(
+        "CLEANED AI RESPONSE:",
+        cleanedReply
+      );
 
-        console.log(
-          "CLEANED AI RESPONSE:",
+      const parsed =
+        parseLesson(
           cleanedReply
         );
 
-        const parsed =
-          parseLesson(
-            cleanedReply
-          );
-
-        if (parsed) {
-          console.log(
-            "AI LESSON SUCCESS"
-          );
-
-          rememberLesson(
-            mode,
-            JSON.stringify(
-              parsed.sentences
-            )
-          );
-
-          return {
-            ...parsed,
-
-            source:
-              "ai",
-
-            model,
-
-            debug:
-              "AI generation success"
-          };
-        }
-
-        console.log(
-          "PARSED RESULT NULL"
-        );
-      } catch (error: any) {
-        logError(
-          `Model Failed: ${model}`,
-          error
-        );
-
-        console.log(
-          "MODEL ERROR:",
-          error
+      if (
+        !parsed
+      ) {
+        throw new Error(
+          "Lesson parse failed"
         );
       }
+
+      rememberLesson(
+        mode,
+        JSON.stringify(
+          parsed.sentences
+        )
+      );
+
+      return {
+        ...parsed,
+
+        source:
+          "ai",
+
+        model,
+
+        debug:
+          "AI generation success"
+      };
+    } catch (error) {
+      lastError = error;
+
+      console.log(
+        "MODEL FAILED:",
+        model,
+        error
+      );
+
+      logError(
+        `Model Failed: ${model}`,
+        error
+      );
     }
-
-    console.log(
-      "USING FALLBACK LESSON"
-    );
-
-    return generateFallbackLesson(
-      mode,
-      "All models failed"
-    );
-  } catch (error: any) {
-    logError(
-      "Generate Lesson Error",
-      error
-    );
-
-    console.log(
-      "FINAL GENERATE ERROR:",
-      error
-    );
-
-    return generateFallbackLesson(
-      mode,
-      error?.message ||
-        "Unknown generate error"
-    );
   }
-}
+
+  throw new Error(
+    `All models failed: ${String(
+      lastError
+    )}`
+  );
+            }
