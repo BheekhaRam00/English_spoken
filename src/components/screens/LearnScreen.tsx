@@ -819,7 +819,7 @@ export default function LearnScreen({
           )}
         </button>
 
-        {/* FOOTER */}
+ {/* FOOTER */}
         <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-purple-600/10 to-blue-600/10 p-4">
           <div className="mb-2 flex items-center gap-2">
             <Sparkles
@@ -832,4 +832,11 @@ export default function LearnScreen({
           </div>
 
           <p className="text-xs leading-6 text-white/70">
-            Learn English sentence-by-sentence with auto voic
+            Learn English sentence-by-sentence with auto voice playback and replay support.
+          </p>
+        </section>
+
+      </div>
+    </main>
+  );
+}
