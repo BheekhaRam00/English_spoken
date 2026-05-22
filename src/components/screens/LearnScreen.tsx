@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState
 } from "react";
 
@@ -16,7 +17,9 @@ import {
   Sparkles,
   Brain,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 import {
@@ -81,15 +84,34 @@ export default function LearnScreen({
   const [error, setError] =
     useState("");
 
-  const [playingFullLesson,
-    setPlayingFullLesson] =
-    useState(false);
+  const [
+    currentSentenceIndex,
+    setCurrentSentenceIndex
+  ] = useState(0);
+
+  const [
+    autoPlayedSentence,
+    setAutoPlayedSentence
+  ] = useState("");
+
+  const autoplayTimeoutRef =
+    useRef<NodeJS.Timeout | null>(
+      null
+    );
 
   async function fetchLesson() {
     try {
       setLoading(true);
 
       setError("");
+
+      setCurrentSentenceIndex(
+        0
+      );
+
+      setAutoPlayedSentence(
+        ""
+      );
 
       const response =
         await fetch(
@@ -156,56 +178,124 @@ export default function LearnScreen({
           (item) =>
             item.length > 2
         )
-        .slice(0, 5);
+        .slice(0, 8);
     }, [lesson]);
 
   /*
-  PLAY FULL LESSON
+  CURRENT SENTENCE
   */
-  async function playFullLesson() {
-    try {
-      if (
-        playingFullLesson ||
-        !lessonSentences.length
-      ) {
-        return;
-      }
+  const currentSentence =
+    lessonSentences[
+      currentSentenceIndex
+    ] || "";
 
-      setPlayingFullLesson(
-        true
+  /*
+  AUTO PLAY
+  */
+  useEffect(() => {
+    if (
+      !currentSentence
+    ) {
+      return;
+    }
+
+    /*
+    PREVENT DUPLICATE AUTO PLAY
+    */
+    if (
+      autoPlayedSentence ===
+      currentSentence
+    ) {
+      return;
+    }
+
+    if (
+      autoplayTimeoutRef.current
+    ) {
+      clearTimeout(
+        autoplayTimeoutRef.current
       );
+    }
 
-      for (const sentence of lessonSentences) {
-        await speakText({
+    autoplayTimeoutRef.current =
+      setTimeout(() => {
+        speakText({
           text:
-            sentence
+            currentSentence
         });
 
-        /*
-        NATURAL PAUSE
-        */
-        await new Promise(
-          (resolve) =>
-            setTimeout(
-              resolve,
-              500
-            )
+        setAutoPlayedSentence(
+          currentSentence
+        );
+      }, 500);
+
+    return () => {
+      if (
+        autoplayTimeoutRef.current
+      ) {
+        clearTimeout(
+          autoplayTimeoutRef.current
         );
       }
-    } catch (error) {
-      console.error(
-        "Full Lesson Play Error:",
-        error
-      );
-    } finally {
-      setPlayingFullLesson(
-        false
+    };
+  }, [
+    currentSentence,
+    autoPlayedSentence
+  ]);
+
+  /*
+  NEXT
+  */
+  function handleNextSentence() {
+    if (
+      currentSentenceIndex <
+      lessonSentences.length -
+        1
+    ) {
+      setCurrentSentenceIndex(
+        (
+          previous
+        ) =>
+          previous + 1
       );
     }
   }
 
   /*
-  COMPACT MOBILE LOADER
+  PREVIOUS
+  */
+  function handlePreviousSentence() {
+    if (
+      currentSentenceIndex >
+      0
+    ) {
+      setCurrentSentenceIndex(
+        (
+          previous
+        ) =>
+          previous - 1
+      );
+    }
+  }
+
+  /*
+  REPLAY
+  */
+  function handleReplay() {
+    if (
+      !currentSentence
+    ) {
+      return;
+    }
+
+    speakText({
+      text:
+        currentSentence
+    });
+  }
+
+  /*
+  LOADER
   */
   if (
     loading &&
@@ -304,7 +394,8 @@ export default function LearnScreen({
         ) : null}
 
         {/* MAIN CARD */}
-        {lesson ? (
+        {lesson &&
+        currentSentence ? (
           <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
             {/* TOP */}
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -331,176 +422,180 @@ export default function LearnScreen({
               </div>
             </div>
 
-            {/* ENGLISH */}
-            <div className="space-y-3">
-              {lessonSentences.map(
-                (
-                  sentence,
-                  index
-                ) => (
-                  <div
-                    key={index}
-                    className="rounded-2xl border border-white/5 bg-white/5 p-4"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-xs font-bold">
-                        {index + 1}
-                      </div>
+            {/* PROGRESS */}
+            <div className="mb-4 flex items-center justify-between text-xs text-white/60">
+              <span>
+                Sentence{" "}
+                {currentSentenceIndex +
+                  1}
+                /
+                {
+                  lessonSentences.length
+                }
+              </span>
 
-                      <div className="flex-1">
-                        <p className="text-[15px] leading-7 text-white">
-                          {sentence}
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() =>
-                          speakText(
-                            {
-                              text:
-                                sentence
-                            }
-                          )
-                        }
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10"
-                      >
-                        <Volume2
-                          size={16}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                )
-              )}
+              <span>
+                Auto Voice Enabled
+              </span>
             </div>
 
-            {/* FULL AUDIO */}
-            <button
-              onClick={
-                playFullLesson
-              }
-              disabled={
-                playingFullLesson
-              }
-              className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold disabled:opacity-60"
-            >
-              {playingFullLesson ? (
-                <>
-                  <Loader2
-                    size={18}
-                    className="animate-spin"
-                  />
+            {/* SENTENCE CARD */}
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-bold">
+                  {currentSentenceIndex +
+                    1}
+                </div>
 
-                  Playing Lesson...
-                </>
-              ) : (
-                <>
+                <button
+                  onClick={
+                    handleReplay
+                  }
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10"
+                >
                   <Volume2
                     size={18}
                   />
+                </button>
+              </div>
 
-                  Listen Full Lesson
-                </>
-              )}
-            </button>
-
-            {/* HINDI */}
-            <div className="mt-4 rounded-2xl border border-white/5 bg-white/5 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-white">
-                Hindi Meaning
-              </h3>
-
-              <p className="text-sm leading-7 text-white/75">
-                {lesson.hindi}
+              {/* ENGLISH */}
+              <p className="text-xl font-semibold leading-9 text-white">
+                {
+                  currentSentence
+                }
               </p>
-            </div>
 
-            {/* VOCAB */}
-            {lesson.vocabulary
-              ?.length ? (
-              <div className="mt-4">
-                <h3 className="mb-3 text-sm font-semibold">
-                  Vocabulary
+              {/* HINDI */}
+              <div className="mt-5 rounded-2xl border border-white/5 bg-white/5 p-4">
+                <h3 className="mb-2 text-sm font-semibold text-white">
+                  Hindi Meaning
                 </h3>
 
-                <div className="space-y-3">
-                  {lesson.vocabulary
-                    .slice(0, 3)
-                    .map(
-                      (
-                        item
-                      ) => (
-                        <div
-                          key={
-                            item.word
-                          }
-                          className="rounded-2xl border border-white/5 bg-white/5 p-3"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <h4 className="text-sm font-semibold">
-                                {
-                                  item.word
-                                }
-                              </h4>
-
-                              <p className="mt-1 text-xs text-white/70">
-                                {
-                                  item.meaning
-                                }
-                              </p>
-
-                              <p className="mt-1 text-[11px] text-white/45">
-                                {
-                                  item.pronunciation
-                                }
-                              </p>
-                            </div>
-
-                            <button
-                              onClick={() =>
-                                speakText(
-                                  {
-                                    text:
-                                      item.word
-                                  }
-                                )
-                              }
-                              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"
-                            >
-                              <Volume2
-                                size={
-                                  15
-                                }
-                              />
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    )}
-                </div>
+                <p className="text-sm leading-7 text-white/75">
+                  {lesson.hindi}
+                </p>
               </div>
-            ) : null}
 
-            {/* TIP */}
-            <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/10 p-4">
-              <div className="flex gap-3">
-                <CheckCircle2
-                  size={18}
-                  className="mt-0.5 shrink-0"
-                />
-
-                <div>
-                  <h3 className="text-sm font-semibold">
-                    Practice Tip
+              {/* VOCAB */}
+              {lesson.vocabulary
+                ?.length ? (
+                <div className="mt-5">
+                  <h3 className="mb-3 text-sm font-semibold">
+                    Vocabulary
                   </h3>
 
-                  <p className="mt-1 text-xs leading-6 text-white/75">
-                    {lesson.pronunciationTip ||
-                      "Speak slowly and confidently."}
-                  </p>
+                  <div className="space-y-3">
+                    {lesson.vocabulary
+                      .slice(0, 2)
+                      .map(
+                        (
+                          item
+                        ) => (
+                          <div
+                            key={
+                              item.word
+                            }
+                            className="rounded-2xl border border-white/5 bg-white/5 p-3"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <h4 className="text-sm font-semibold">
+                                  {
+                                    item.word
+                                  }
+                                </h4>
+
+                                <p className="mt-1 text-xs text-white/70">
+                                  {
+                                    item.meaning
+                                  }
+                                </p>
+                              </div>
+
+                              <button
+                                onClick={() =>
+                                  speakText(
+                                    {
+                                      text:
+                                        item.word
+                                    }
+                                  )
+                                }
+                                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"
+                              >
+                                <Volume2
+                                  size={
+                                    15
+                                  }
+                                />
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      )}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* TIP */}
+              <div className="mt-5 rounded-2xl border border-green-500/20 bg-green-500/10 p-4">
+                <div className="flex gap-3">
+                  <CheckCircle2
+                    size={18}
+                    className="mt-0.5 shrink-0"
+                  />
+
+                  <div>
+                    <h3 className="text-sm font-semibold">
+                      Practice Tip
+                    </h3>
+
+                    <p className="mt-1 text-xs leading-6 text-white/75">
+                      {lesson.pronunciationTip ||
+                        "Speak slowly and confidently."}
+                    </p>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* NAVIGATION */}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                onClick={
+                  handlePreviousSentence
+                }
+                disabled={
+                  currentSentenceIndex ===
+                  0
+                }
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold disabled:opacity-40"
+              >
+                <ChevronLeft
+                  size={18}
+                />
+
+                Previous
+              </button>
+
+              <button
+                onClick={
+                  handleNextSentence
+                }
+                disabled={
+                  currentSentenceIndex ===
+                  lessonSentences.length -
+                    1
+                }
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold disabled:opacity-40"
+              >
+                Next
+
+                <ChevronRight
+                  size={18}
+                />
+              </button>
             </div>
           </section>
         ) : null}
@@ -546,7 +641,7 @@ export default function LearnScreen({
           </div>
 
           <p className="text-xs leading-6 text-white/70">
-            Practice short real-life English conversations with pronunciation help and vocabulary support.
+            Learn English sentence-by-sentence with auto voice playback and replay support.
           </p>
         </section>
       </div>
