@@ -103,7 +103,7 @@ export async function GET(
       );
 
     /*
-    GENERATE UNIQUE LESSON
+    GENERATE LESSON
     */
     const lesson =
       await generateLesson({
@@ -146,9 +146,6 @@ export async function GET(
         status: 200,
 
         headers: {
-          /*
-          VERY IMPORTANT
-          */
           "Cache-Control":
             "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
 
@@ -173,8 +170,13 @@ export async function GET(
       {
         success: false,
 
+        /*
+        REAL ERROR EXPOSE
+        */
         message:
-          "Unable to generate lesson.",
+          error instanceof Error
+            ? error.message
+            : "Unknown error",
 
         generatedAt:
           Date.now()
