@@ -103,11 +103,8 @@ export function speakPronunciation(
   speakText({
     text,
 
-    voiceType: "professional",
-
-    rate: 0.88,
-
-    pitch: 1
+    voiceType:
+      "professional"
   });
 }
 
