@@ -18,8 +18,11 @@ type TTSRequestBody = {
     | "professional";
 };
 
+/*
+WORKING HF TTS MODEL
+*/
 const HUGGINGFACE_API_URL =
-  "https://api-inference.huggingface.co/models/microsoft/speecht5_tts";
+  "https://api-inference.huggingface.co/models/espnet/kan-bayashi_ljspeech_vits";
 
 function cleanSpeechText(
   text: string
@@ -35,24 +38,6 @@ function cleanSpeechText(
     .trim();
 }
 
-function getVoice(
-  voiceType:
-    | "female"
-    | "male"
-    | "professional" = "female"
-) {
-  switch (voiceType) {
-    case "male":
-      return "am_adam";
-
-    case "professional":
-      return "af_bella";
-
-    default:
-      return "af_sarah";
-  }
-}
-
 export async function POST(
   request: NextRequest
 ) {
@@ -61,16 +46,9 @@ export async function POST(
       process.env
         .HUGGINGFACE_API_KEY;
 
-    /*
-    ENV CHECK
-    */
     if (
       !huggingFaceKey
     ) {
-      console.error(
-        "Missing HuggingFace API key."
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -93,9 +71,6 @@ export async function POST(
         body?.text || ""
       );
 
-    /*
-    EMPTY TEXT CHECK
-    */
     if (
       !cleanedText
     ) {
@@ -113,17 +88,14 @@ export async function POST(
     }
 
     /*
-    LIMIT LONG AUDIO
+    SHORT LIMIT
     */
     const limitedText =
       cleanedText.slice(
         0,
-        700
+        400
       );
 
-    /*
-    REQUEST HUGGINGFACE
-    */
     const response =
       await fetch(
         HUGGINGFACE_API_URL,
@@ -135,37 +107,31 @@ export async function POST(
               `Bearer ${huggingFaceKey}`,
 
             "Content-Type":
-              "application/json",
-
-            Accept:
-              "audio/mpeg"
+              "application/json"
           },
 
           body: JSON.stringify({
-  inputs:
-    limitedText
-})
+            inputs:
+              limitedText
+          })
         }
       );
 
     /*
-    DEBUG ERROR RESPONSE
+    HANDLE HF ERRORS
     */
     if (!response.ok) {
       const errorText =
         await response.text();
 
       console.error(
-        "Kokoro TTS Error:",
+        "HF TTS Error:",
         errorText
       );
 
       return NextResponse.json(
         {
           success: false,
-
-          status:
-            response.status,
 
           message:
             "TTS generation failed.",
@@ -181,23 +147,16 @@ export async function POST(
     }
 
     /*
-    AUDIO RESPONSE
+    AUDIO BUFFER
     */
     const audioBuffer =
       await response.arrayBuffer();
 
-    /*
-    EMPTY AUDIO CHECK
-    */
     if (
       !audioBuffer ||
       audioBuffer.byteLength ===
         0
     ) {
-      console.error(
-        "Empty audio buffer received."
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -218,13 +177,10 @@ export async function POST(
 
         headers: {
           "Content-Type":
-            "audio/mpeg",
+            "audio/wav",
 
           "Cache-Control":
-            "no-store",
-
-          "Content-Length":
-            audioBuffer.byteLength.toString()
+            "no-store"
         }
       }
     );
