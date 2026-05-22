@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useMemo,
   useRef,
   useState
 } from "react";
@@ -55,14 +54,18 @@ type VocabularyItem = {
   pronunciation: string;
 };
 
+type LessonSentence = {
+  english: string;
+
+  hindi: string;
+};
+
 type LessonData = {
   title?: string;
 
   category?: string;
 
-  english: string;
-
-  hindi: string;
+  sentences: LessonSentence[];
 
   vocabulary?: VocabularyItem[];
 
@@ -156,38 +159,10 @@ export default function LearnScreen({
     fetchLesson();
   }, [mode]);
 
-  /*
-  CLEAN SENTENCE SPLIT
-  */
-  const lessonSentences =
-    useMemo(() => {
-      if (
-        !lesson?.english
-      ) {
-        return [];
-      }
-
-      return lesson.english
-        .split(
-          /\n|[.!?]+/
-        )
-        .map((item) =>
-          item.trim()
-        )
-        .filter(
-          (item) =>
-            item.length > 2
-        )
-        .slice(0, 8);
-    }, [lesson]);
-
-  /*
-  CURRENT SENTENCE
-  */
   const currentSentence =
-    lessonSentences[
+    lesson?.sentences?.[
       currentSentenceIndex
-    ] || "";
+    ];
 
   /*
   AUTO PLAY
@@ -199,12 +174,9 @@ export default function LearnScreen({
       return;
     }
 
-    /*
-    PREVENT DUPLICATE AUTO PLAY
-    */
     if (
       autoPlayedSentence ===
-      currentSentence
+      currentSentence.english
     ) {
       return;
     }
@@ -221,11 +193,11 @@ export default function LearnScreen({
       setTimeout(() => {
         speakText({
           text:
-            currentSentence
+            currentSentence.english
         });
 
         setAutoPlayedSentence(
-          currentSentence
+          currentSentence.english
         );
       }, 500);
 
@@ -243,13 +215,16 @@ export default function LearnScreen({
     autoPlayedSentence
   ]);
 
-  /*
-  NEXT
-  */
   function handleNextSentence() {
     if (
+      !lesson
+    ) {
+      return;
+    }
+
+    if (
       currentSentenceIndex <
-      lessonSentences.length -
+      lesson.sentences.length -
         1
     ) {
       setCurrentSentenceIndex(
@@ -261,9 +236,6 @@ export default function LearnScreen({
     }
   }
 
-  /*
-  PREVIOUS
-  */
   function handlePreviousSentence() {
     if (
       currentSentenceIndex >
@@ -278,9 +250,6 @@ export default function LearnScreen({
     }
   }
 
-  /*
-  REPLAY
-  */
   function handleReplay() {
     if (
       !currentSentence
@@ -290,13 +259,10 @@ export default function LearnScreen({
 
     speakText({
       text:
-        currentSentence
+        currentSentence.english
     });
   }
 
-  /*
-  LOADER
-  */
   if (
     loading &&
     !lesson
@@ -324,6 +290,7 @@ export default function LearnScreen({
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#0f172a] px-3 py-4 text-white">
       <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+
         {/* HEADER */}
         <section className="flex items-center gap-3">
           <Link href="/">
@@ -375,28 +342,10 @@ export default function LearnScreen({
           )}
         </section>
 
-        {/* ERROR */}
-        {error ? (
-          <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-4 text-center">
-            <p className="text-sm text-red-200">
-              {error}
-            </p>
-
-            <button
-              onClick={
-                fetchLesson
-              }
-              className="mt-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-2 text-sm font-semibold"
-            >
-              Retry
-            </button>
-          </div>
-        ) : null}
-
-        {/* MAIN CARD */}
         {lesson &&
         currentSentence ? (
           <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+
             {/* TOP */}
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-3 py-2 text-xs font-semibold">
@@ -406,7 +355,6 @@ export default function LearnScreen({
 
                 <span>
                   {lesson.title ||
-                    lesson.category ||
                     "AI Lesson"}
                 </span>
               </div>
@@ -430,7 +378,8 @@ export default function LearnScreen({
                   1}
                 /
                 {
-                  lessonSentences.length
+                  lesson.sentences
+                    .length
                 }
               </span>
 
@@ -441,6 +390,7 @@ export default function LearnScreen({
 
             {/* SENTENCE CARD */}
             <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-bold">
                   {currentSentenceIndex +
@@ -462,7 +412,7 @@ export default function LearnScreen({
               {/* ENGLISH */}
               <p className="text-xl font-semibold leading-9 text-white">
                 {
-                  currentSentence
+                  currentSentence.english
                 }
               </p>
 
@@ -473,7 +423,9 @@ export default function LearnScreen({
                 </h3>
 
                 <p className="text-sm leading-7 text-white/75">
-                  {lesson.hindi}
+                  {
+                    currentSentence.hindi
+                  }
                 </p>
               </div>
 
@@ -585,7 +537,8 @@ export default function LearnScreen({
                 }
                 disabled={
                   currentSentenceIndex ===
-                  lessonSentences.length -
+                  lesson.sentences
+                    .length -
                     1
                 }
                 className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold disabled:opacity-40"
