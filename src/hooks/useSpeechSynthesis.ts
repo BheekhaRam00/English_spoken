@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useState
+} from "react";
 
 import {
   speakText,
@@ -16,12 +19,6 @@ type SpeakOptions = {
   text: string;
 
   voiceType?: VoiceType;
-
-  rate?: number;
-
-  pitch?: number;
-
-  volume?: number;
 };
 
 export default function useSpeechSynthesis() {
@@ -35,50 +32,56 @@ export default function useSpeechSynthesis() {
     useState("");
 
   const speak = useCallback(
-    ({
+    async ({
       text,
-      voiceType = "female",
-      rate = 0.95,
-      pitch = 1,
-      volume = 1
+      voiceType = "female"
     }: SpeakOptions) => {
       setError("");
 
-      speakText({
-        text,
+      try {
+        await speakText({
+          text,
 
-        voiceType,
+          voiceType,
 
-        rate,
+          onStart: () => {
+            setIsSpeaking(true);
 
-        pitch,
+            setIsPaused(false);
+          },
 
-        volume,
+          onEnd: () => {
+            setIsSpeaking(false);
 
-        onStart: () => {
-          setIsSpeaking(true);
+            setIsPaused(false);
+          },
 
-          setIsPaused(false);
-        },
-
-        onEnd: () => {
-          setIsSpeaking(false);
-
-          setIsPaused(false);
-        },
-
-        onError: (
-          speechError
-        ) => {
-          setError(
+          onError: (
             speechError
-          );
+          ) => {
+            setError(
+              speechError
+            );
 
-          setIsSpeaking(false);
+            setIsSpeaking(false);
 
-          setIsPaused(false);
-        }
-      });
+            setIsPaused(false);
+          }
+        });
+      } catch (error) {
+        console.error(
+          "Speech Hook Error:",
+          error
+        );
+
+        setError(
+          "Voice playback failed."
+        );
+
+        setIsSpeaking(false);
+
+        setIsPaused(false);
+      }
     },
     []
   );
