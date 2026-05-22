@@ -23,9 +23,12 @@ type OpenRouterParams = {
   }[];
 
   mode:
+    | "beginner"
     | "daily"
+    | "office"
     | "business"
     | "interview"
+    | "pronunciation"
     | "advanced";
 };
 
@@ -46,13 +49,14 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 /*
-ONLY RELATIVELY STABLE MODELS
-DO NOT KEEP ROTATING MODELS
+STABLE FREE MODELS
 */
 const MODELS = [
-  "deepseek/deepseek-chat-v3-0324:free",
+  "google/gemma-2-9b-it:free",
 
-  "meta-llama/llama-3.1-8b-instruct:free"
+  "microsoft/phi-3-mini-128k-instruct:free",
+
+  "meta-llama/llama-3.2-3b-instruct:free"
 ];
 
 function normalizeAIReply(
@@ -98,7 +102,7 @@ async function makeRequest({
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 12000);
+    }, 20000);
 
   try {
     const messages = [
@@ -109,14 +113,11 @@ async function makeRequest({
 ${systemPrompt}
 
 IMPORTANT RULES:
-- Speak naturally like a real human.
-- Use conversational spoken English.
+- Speak naturally.
+- Use conversational English.
 - Maximum 3 short sentences.
-- Keep replies engaging.
-- Avoid robotic wording.
-- Avoid repeating the same structure.
-- Ask small follow-up questions sometimes.
 - No markdown.
+- No bullet points.
 `
       },
 
@@ -141,6 +142,11 @@ IMPORTANT RULES:
           )
       }
     ];
+
+    console.log(
+      "OPENROUTER MODEL:",
+      model
+    );
 
     const response =
       await fetch(
@@ -170,22 +176,26 @@ IMPORTANT RULES:
 
             messages,
 
-            temperature: 0.85,
+            temperature: 0.8,
 
-            top_p: 0.92,
-
-            frequency_penalty: 0.35,
-
-            presence_penalty: 0.3,
-
-            max_tokens: 140
+            max_tokens: 150
           })
         }
       );
 
+    console.log(
+      "OPENROUTER STATUS:",
+      response.status
+    );
+
     const data:
       OpenRouterResponse =
       await response.json();
+
+    console.log(
+      "OPENROUTER DATA:",
+      JSON.stringify(data)
+    );
 
     if (!response.ok) {
       throw new Error(
@@ -213,11 +223,6 @@ IMPORTANT RULES:
       `OpenRouter success: ${model}`
     );
 
-    /*
-    IMPORTANT:
-    DO NOT OVER-CLEAN AI TEXT
-    OTHERWISE NATURAL SPEECH BREAKS
-    */
     return normalizeAIReply(
       aiReply
     );
@@ -263,6 +268,12 @@ export async function callOpenRouter({
       }
     } catch (error) {
       lastError = error;
+
+      console.log(
+        "MODEL FAILED:",
+        model,
+        error
+      );
 
       logError(
         `Model Failed: ${model}`,
