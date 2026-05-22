@@ -33,19 +33,21 @@ function buildPracticePrompt(
   return `
 Generate 5 spoken English practice exercises for Indian learners.
 
-Mode:
+MODE:
 ${mode}
 
-Requirements:
-- Practical spoken English
-- Real-life communication
-- Natural conversation
-- Beginner-friendly
-- Professional tone when needed
+STRICT RULES:
+- Real-life spoken English.
+- Practical conversation.
+- Beginner friendly.
+- Natural human tone.
+- Every exercise must be unique.
+- Keep questions short.
+- Return STRICT JSON ONLY.
+- NO markdown.
+- NO explanation.
 
-Return STRICT JSON only.
-
-JSON format:
+VALID JSON FORMAT:
 [
   {
     "question": "",
@@ -58,128 +60,81 @@ JSON format:
 
 function parsePractice(
   text: string
-): PracticeItem[] | null {
-  try {
-    const cleaned =
-      text
-        .replace(
-          /```json/g,
-          ""
-        )
-        .replace(
-          /```/g,
-          ""
-        )
-        .trim();
+): PracticeItem[] {
+  const cleaned =
+    text
+      .replace(
+        /```json/gi,
+        ""
+      )
+      .replace(
+        /```/g,
+        ""
+      )
+      .trim();
 
-    return JSON.parse(
+  console.log(
+    "RAW PRACTICE RESPONSE:",
+    cleaned
+  );
+
+  const parsed =
+    JSON.parse(
       cleaned
     );
-  } catch (error) {
-    logError(
-      "Practice Parse Error",
-      error
+
+  if (
+    !Array.isArray(
+      parsed
+    )
+  ) {
+    throw new Error(
+      "Practice response is not an array"
     );
-
-    return null;
   }
-}
 
-function generateFallbackPractice(
-  mode: string
-): PracticeItem[] {
-  if (
-    mode ===
-    "business"
-  ) {
-    return [
-      {
-        question:
-          "How do you introduce yourself in a meeting?",
+  const sanitized =
+    parsed
+      .filter(
+        (
+          item: any
+        ) =>
+          item?.question &&
+          item?.hint &&
+          item?.sampleAnswer
+      )
+      .slice(0, 5)
+      .map(
+        (
+          item: any
+        ) => ({
+          question:
+            String(
+              item.question
+            ).trim(),
 
-        hint:
-          "Mention your name and role.",
+          hint:
+            String(
+              item.hint
+            ).trim(),
 
-        sampleAnswer:
-          "Hello everyone, my name is Rahul and I work as a project coordinator."
-      },
-
-      {
-        question:
-          "How do you ask for clarification professionally?",
-
-        hint:
-          "Be polite and confident.",
-
-        sampleAnswer:
-          "Could you please explain that again?"
-      }
-    ];
-  }
+          sampleAnswer:
+            String(
+              item.sampleAnswer
+            ).trim()
+        })
+      );
 
   if (
-    mode ===
-    "interview"
+    sanitized.length ===
+    0
   ) {
-    return [
-      {
-        question:
-          "Tell me about yourself.",
-
-        hint:
-          "Mention education and work.",
-
-        sampleAnswer:
-          "I am a motivated person with experience in customer communication."
-      },
-
-      {
-        question:
-          "What are your strengths?",
-
-        hint:
-          "Mention communication and teamwork.",
-
-        sampleAnswer:
-          "I am confident, hardworking, and a quick learner."
-      }
-    ];
+    throw new Error(
+      "No valid practice items found"
+    );
   }
 
-  return [
-    {
-      question:
-        "What do you usually do in the morning?",
-
-      hint:
-        "Talk about your routine.",
-
-      sampleAnswer:
-        "I usually wake up early and go for a walk."
-    },
-
-    {
-      question:
-        "How was your weekend?",
-
-      hint:
-        "Describe your activities.",
-
-      sampleAnswer:
-        "My weekend was relaxing and enjoyable."
-    },
-
-    {
-      question:
-        "What are your hobbies?",
-
-      hint:
-        "Talk naturally about interests.",
-
-      sampleAnswer:
-        "I enjoy listening to music and learning new skills."
-    }
-  ];
+  return sanitized;
 }
 
 export async function generatePractice({
@@ -191,8 +146,8 @@ export async function generatePractice({
         .OPENROUTER_API_KEY;
 
     if (!apiKey) {
-      return generateFallbackPractice(
-        mode
+      throw new Error(
+        "OPENROUTER_API_KEY missing"
       );
     }
 
@@ -208,7 +163,14 @@ export async function generatePractice({
         history: [],
 
         mode:
-          "daily"
+          mode ===
+            "beginner" ||
+          mode ===
+            "office" ||
+          mode ===
+            "pronunciation"
+            ? "daily"
+            : mode
       });
 
     const cleanedReply =
@@ -221,17 +183,6 @@ export async function generatePractice({
         cleanedReply
       );
 
-    if (
-      !parsedPractice ||
-      !Array.isArray(
-        parsedPractice
-      )
-    ) {
-      return generateFallbackPractice(
-        mode
-      );
-    }
-
     return parsedPractice;
   } catch (error) {
     logError(
@@ -239,8 +190,6 @@ export async function generatePractice({
       error
     );
 
-    return generateFallbackPractice(
-      mode
-    );
+    throw error;
   }
 }
