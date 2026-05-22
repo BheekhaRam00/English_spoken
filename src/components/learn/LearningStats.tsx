@@ -1,321 +1,650 @@
 "use client";
 
 import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
+
+import Link from "next/link";
+
+import {
+  ArrowLeft,
   BookOpen,
-  Trophy,
-  Flame,
+  Volume2,
+  CheckCircle2,
+  Sparkles,
   Brain,
-  TrendingUp,
-  Sparkles
+  Loader2,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
-type LearningStatsProps = {
-  completedLessons?: number;
+import {
+  LearningMode
+} from "@/types";
 
-  streakDays?: number;
+import {
+  speakText
+} from "@/services/speech/speechSynthesis";
 
-  vocabularyLearned?: number;
+type LearnScreenProps = {
+  mode: LearningMode;
 
-  fluencyScore?: number;
+  onModeChange: (
+    mode: LearningMode
+  ) => void;
 };
 
-export default function LearningStats({
-  completedLessons = 24,
+const modes: LearningMode[] = [
+  "beginner",
+  "daily",
+  "office",
+  "business",
+  "interview",
+  "advanced"
+];
 
-  streakDays = 7,
+type VocabularyItem = {
+  word: string;
 
-  vocabularyLearned = 142,
+  meaning: string;
 
-  fluencyScore = 82
-}: LearningStatsProps) {
-  const stats = [
-    {
-      icon: (
-        <BookOpen size={24} />
-      ),
+  pronunciation: string;
+};
 
-      title:
-        "Lessons",
+type LessonData = {
+  title?: string;
 
-      value:
-        completedLessons.toString(),
+  category?: string;
 
-      background:
-        "linear-gradient(135deg, rgba(147,51,234,0.18), rgba(37,99,235,0.18))"
-    },
+  english: string;
 
-    {
-      icon: (
-        <Flame size={24} />
-      ),
+  hindi: string;
 
-      title:
-        "Streak",
+  vocabulary?: VocabularyItem[];
 
-      value: `${streakDays} Days`,
+  pronunciationTip?: string;
+};
 
-      background:
-        "linear-gradient(135deg, rgba(249,115,22,0.18), rgba(239,68,68,0.18))"
-    },
+export default function LearnScreen({
+  mode,
+  onModeChange
+}: LearnScreenProps) {
+  const [lesson, setLesson] =
+    useState<LessonData | null>(
+      null
+    );
 
-    {
-      icon: (
-        <Brain size={24} />
-      ),
+  const [loading, setLoading] =
+    useState(false);
 
-      title:
-        "Vocabulary",
+  const [error, setError] =
+    useState("");
 
-      value:
-        vocabularyLearned.toString(),
+  const [
+    currentSentenceIndex,
+    setCurrentSentenceIndex
+  ] = useState(0);
 
-      background:
-        "linear-gradient(135deg, rgba(16,185,129,0.18), rgba(34,197,94,0.18))"
-    },
+  const [
+    autoPlayedSentence,
+    setAutoPlayedSentence
+  ] = useState("");
 
-    {
-      icon: (
-        <TrendingUp
-          size={24}
-        />
-      ),
+  const autoplayTimeoutRef =
+    useRef<NodeJS.Timeout | null>(
+      null
+    );
 
-      title:
-        "Fluency",
+  async function fetchLesson() {
+    try {
+      setLoading(true);
 
-      value: `${fluencyScore}%`,
+      setError("");
 
-      background:
-        "linear-gradient(135deg, rgba(59,130,246,0.18), rgba(147,51,234,0.18))"
+      setCurrentSentenceIndex(
+        0
+      );
+
+      setAutoPlayedSentence(
+        ""
+      );
+
+      const response =
+        await fetch(
+          `/api/lesson?mode=${mode}&t=${Date.now()}`,
+          {
+            cache:
+              "no-store"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data?.success ||
+        !data?.lesson
+      ) {
+        throw new Error(
+          "Lesson load failed."
+        );
+      }
+
+      setLesson(
+        data.lesson
+      );
+    } catch (error) {
+      console.error(
+        "Lesson Fetch Error:",
+        error
+      );
+
+      setError(
+        "Unable to generate lesson."
+      );
+    } finally {
+      setLoading(false);
     }
-  ];
+  }
 
-  return (
-    <section
-      className="fade-in"
-      style={{
-        marginTop: "28px"
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          marginBottom: "20px"
-        }}
-      >
-        <Trophy size={24} />
+  useEffect(() => {
+    fetchLesson();
+  }, [mode]);
 
-        <h2
-          style={{
-            fontSize: "28px"
-          }}
-        >
-          Learning Progress
-        </h2>
-      </div>
+  /*
+  CLEAN SENTENCE SPLIT
+  */
+  const lessonSentences =
+    useMemo(() => {
+      if (
+        !lesson?.english
+      ) {
+        return [];
+      }
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "1fr 1fr",
-          gap: "16px",
+      return lesson.english
+        .split(
+          /\n|[.!?]+/
+        )
+        .map((item) =>
+          item.trim()
+        )
+        .filter(
+          (item) =>
+            item.length > 2
+        )
+        .slice(0, 8);
+    }, [lesson]);
 
-          marginBottom:
-            "24px"
-        }}
-      >
-        {stats.map(
-          (
-            stat,
-            index
-          ) => (
-            <div
-              key={index}
-              className="glass-card"
-              style={{
-                padding: "22px",
+  /*
+  CURRENT SENTENCE
+  */
+  const currentSentence =
+    lessonSentences[
+      currentSentenceIndex
+    ] || "";
 
-                background:
-                  "rgba(255,255,255,0.05)"
-              }}
-            >
-              <div
-                style={{
-                  width: "58px",
-                  height: "58px",
+  /*
+  AUTO PLAY
+  */
+  useEffect(() => {
+    if (
+      !currentSentence
+    ) {
+      return;
+    }
 
-                  borderRadius:
-                    "18px",
+    /*
+    PREVENT DUPLICATE AUTO PLAY
+    */
+    if (
+      autoPlayedSentence ===
+      currentSentence
+    ) {
+      return;
+    }
 
-                  display: "flex",
+    if (
+      autoplayTimeoutRef.current
+    ) {
+      clearTimeout(
+        autoplayTimeoutRef.current
+      );
+    }
 
-                  alignItems:
-                    "center",
+    autoplayTimeoutRef.current =
+      setTimeout(() => {
+        speakText({
+          text:
+            currentSentence
+        });
 
-                  justifyContent:
-                    "center",
+        setAutoPlayedSentence(
+          currentSentence
+        );
+      }, 500);
 
-                  background:
-                    stat.background,
+    return () => {
+      if (
+        autoplayTimeoutRef.current
+      ) {
+        clearTimeout(
+          autoplayTimeoutRef.current
+        );
+      }
+    };
+  }, [
+    currentSentence,
+    autoPlayedSentence
+  ]);
 
-                  marginBottom:
-                    "18px"
-                }}
-              >
-                {stat.icon}
-              </div>
+  /*
+  NEXT
+  */
+  function handleNextSentence() {
+    if (
+      currentSentenceIndex <
+      lessonSentences.length -
+        1
+    ) {
+      setCurrentSentenceIndex(
+        (
+          previous
+        ) =>
+          previous + 1
+      );
+    }
+  }
 
-              <p
-                style={{
-                  color:
-                    "rgba(255,255,255,0.68)",
+  /*
+  PREVIOUS
+  */
+  function handlePreviousSentence() {
+    if (
+      currentSentenceIndex >
+      0
+    ) {
+      setCurrentSentenceIndex(
+        (
+          previous
+        ) =>
+          previous - 1
+      );
+    }
+  }
 
-                  marginBottom:
-                    "8px",
+  /*
+  REPLAY
+  */
+  function handleReplay() {
+    if (
+      !currentSentence
+    ) {
+      return;
+    }
 
-                  fontSize:
-                    "14px"
-                }}
-              >
-                {stat.title}
-              </p>
+    speakText({
+      text:
+        currentSentence
+    });
+  }
 
-              <h3
-                style={{
-                  fontSize:
-                    "28px",
-
-                  fontWeight:
-                    700
-                }}
-              >
-                {stat.value}
-              </h3>
-            </div>
-          )
-        )}
-      </div>
-
-      <div
-        className="glass-card"
-        style={{
-          padding: "24px",
-
-          background:
-            "linear-gradient(135deg, rgba(147,51,234,0.14), rgba(37,99,235,0.14))"
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-
-            marginBottom:
-              "14px"
-          }}
-        >
-          <Sparkles
-            size={22}
+  /*
+  LOADER
+  */
+  if (
+    loading &&
+    !lesson
+  ) {
+    return (
+      <main className="min-h-screen bg-[#0f172a] px-4 py-5 text-white">
+        <div className="mx-auto flex max-w-md flex-col items-center rounded-3xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl">
+          <Loader2
+            size={34}
+            className="animate-spin"
           />
 
-          <h3
-            style={{
-              fontSize:
-                "24px"
-            }}
-          >
-            AI Learning Insight
-          </h3>
+          <h2 className="mt-5 text-xl font-semibold">
+            Generating Lesson
+          </h2>
+
+          <p className="mt-2 text-sm text-white/60">
+            Creating spoken English practice...
+          </p>
         </div>
+      </main>
+    );
+  }
 
-        <p
-          style={{
-            color:
-              "rgba(255,255,255,0.76)",
+  return (
+    <main className="min-h-screen overflow-x-hidden bg-[#0f172a] px-3 py-4 text-white">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+        {/* HEADER */}
+        <section className="flex items-center gap-3">
+          <Link href="/">
+            <button className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+              <ArrowLeft
+                size={18}
+              />
+            </button>
+          </Link>
 
-            lineHeight:
-              1.9,
-
-            marginBottom:
-              "18px"
-          }}
-        >
-          Your English communication skills
-          are improving steadily. Regular
-          speaking practice and vocabulary
-          revision are helping you become
-          more fluent and confident.
-        </p>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent:
-              "space-between",
-
-            padding: "18px",
-
-            borderRadius:
-              "18px",
-
-            background:
-              "rgba(255,255,255,0.05)"
-          }}
-        >
           <div>
-            <p
-              style={{
-                color:
-                  "rgba(255,255,255,0.68)",
+            <h1 className="text-2xl font-bold">
+              Learn English
+            </h1>
 
-                marginBottom:
-                  "6px"
-              }}
-            >
-              Daily Goal
+            <p className="text-xs text-white/60">
+              AI spoken English lessons
+            </p>
+          </div>
+        </section>
+
+        {/* MODES */}
+        <section className="flex gap-2 overflow-x-auto pb-1">
+          {modes.map(
+            (
+              learningMode
+            ) => (
+              <button
+                key={
+                  learningMode
+                }
+                onClick={() =>
+                  onModeChange(
+                    learningMode
+                  )
+                }
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold capitalize whitespace-nowrap transition ${
+                  mode ===
+                  learningMode
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600"
+                    : "border border-white/10 bg-white/5"
+                }`}
+              >
+                {
+                  learningMode
+                }
+              </button>
+            )
+          )}
+        </section>
+
+        {/* ERROR */}
+        {error ? (
+          <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-4 text-center">
+            <p className="text-sm text-red-200">
+              {error}
             </p>
 
-            <h4
-              style={{
-                fontSize:
-                  "22px"
-              }}
+            <button
+              onClick={
+                fetchLesson
+              }
+              className="mt-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-2 text-sm font-semibold"
             >
-              15 Minutes Speaking
-            </h4>
+              Retry
+            </button>
           </div>
+        ) : null}
 
-          <div
-            style={{
-              width: "72px",
-              height: "72px",
+        {/* MAIN CARD */}
+        {lesson &&
+        currentSentence ? (
+          <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+            {/* TOP */}
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-3 py-2 text-xs font-semibold">
+                <BookOpen
+                  size={14}
+                />
 
-              borderRadius:
-                "22px",
+                <span>
+                  {lesson.title ||
+                    lesson.category ||
+                    "AI Lesson"}
+                </span>
+              </div>
 
-              display: "flex",
+              <div className="flex items-center gap-1 text-xs text-white/70">
+                <Brain
+                  size={14}
+                />
 
-              alignItems:
-                "center",
+                <span>
+                  Live AI
+                </span>
+              </div>
+            </div>
 
-              justifyContent:
-                "center",
+            {/* PROGRESS */}
+            <div className="mb-4 flex items-center justify-between text-xs text-white/60">
+              <span>
+                Sentence{" "}
+                {currentSentenceIndex +
+                  1}
+                /
+                {
+                  lessonSentences.length
+                }
+              </span>
 
-              background:
-                "rgba(255,255,255,0.08)"
-            }}
-          >
-            <Flame
-              size={32}
+              <span>
+                Auto Voice Enabled
+              </span>
+            </div>
+
+            {/* SENTENCE CARD */}
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-bold">
+                  {currentSentenceIndex +
+                    1}
+                </div>
+
+                <button
+                  onClick={
+                    handleReplay
+                  }
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10"
+                >
+                  <Volume2
+                    size={18}
+                  />
+                </button>
+              </div>
+
+              {/* ENGLISH */}
+              <p className="text-xl font-semibold leading-9 text-white">
+                {
+                  currentSentence
+                }
+              </p>
+
+              {/* HINDI */}
+              <div className="mt-5 rounded-2xl border border-white/5 bg-white/5 p-4">
+                <h3 className="mb-2 text-sm font-semibold text-white">
+                  Hindi Meaning
+                </h3>
+
+                <p className="text-sm leading-7 text-white/75">
+                  {lesson.hindi}
+                </p>
+              </div>
+
+              {/* VOCAB */}
+              {lesson.vocabulary
+                ?.length ? (
+                <div className="mt-5">
+                  <h3 className="mb-3 text-sm font-semibold">
+                    Vocabulary
+                  </h3>
+
+                  <div className="space-y-3">
+                    {lesson.vocabulary
+                      .slice(0, 2)
+                      .map(
+                        (
+                          item
+                        ) => (
+                          <div
+                            key={
+                              item.word
+                            }
+                            className="rounded-2xl border border-white/5 bg-white/5 p-3"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <h4 className="text-sm font-semibold">
+                                  {
+                                    item.word
+                                  }
+                                </h4>
+
+                                <p className="mt-1 text-xs text-white/70">
+                                  {
+                                    item.meaning
+                                  }
+                                </p>
+                              </div>
+
+                              <button
+                                onClick={() =>
+                                  speakText(
+                                    {
+                                      text:
+                                        item.word
+                                    }
+                                  )
+                                }
+                                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"
+                              >
+                                <Volume2
+                                  size={
+                                    15
+                                  }
+                                />
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      )}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* TIP */}
+              <div className="mt-5 rounded-2xl border border-green-500/20 bg-green-500/10 p-4">
+                <div className="flex gap-3">
+                  <CheckCircle2
+                    size={18}
+                    className="mt-0.5 shrink-0"
+                  />
+
+                  <div>
+                    <h3 className="text-sm font-semibold">
+                      Practice Tip
+                    </h3>
+
+                    <p className="mt-1 text-xs leading-6 text-white/75">
+                      {lesson.pronunciationTip ||
+                        "Speak slowly and confidently."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* NAVIGATION */}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                onClick={
+                  handlePreviousSentence
+                }
+                disabled={
+                  currentSentenceIndex ===
+                  0
+                }
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold disabled:opacity-40"
+              >
+                <ChevronLeft
+                  size={18}
+                />
+
+                Previous
+              </button>
+
+              <button
+                onClick={
+                  handleNextSentence
+                }
+                disabled={
+                  currentSentenceIndex ===
+                  lessonSentences.length -
+                    1
+                }
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold disabled:opacity-40"
+              >
+                Next
+
+                <ChevronRight
+                  size={18}
+                />
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {/* GENERATE */}
+        <button
+          onClick={
+            fetchLesson
+          }
+          disabled={loading}
+          className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-sm font-semibold transition hover:opacity-90 disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <Loader2
+                size={18}
+                className="animate-spin"
+              />
+
+              Generating...
+            </>
+          ) : (
+            <>
+              <RefreshCw
+                size={18}
+              />
+
+              New AI Lesson
+            </>
+          )}
+        </button>
+
+        {/* FOOTER */}
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-purple-600/10 to-blue-600/10 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles
+              size={16}
             />
+
+            <h2 className="text-sm font-semibold">
+              AI Learning
+            </h2>
           </div>
-        </div>
+
+          <p className="text-xs leading-6 text-white/70">
+            Learn English sentence-by-sentence with auto voice playback and replay support.
+          </p>
+        </section>
       </div>
-    </section>
+    </main>
   );
-            }
+}
