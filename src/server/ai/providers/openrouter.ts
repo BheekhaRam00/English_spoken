@@ -54,9 +54,7 @@ STABLE FREE MODELS
 const MODELS = [
   "openai/gpt-oss-20b:free",
 
-  "deepseek/deepseek-chat-v3-0324:free",
-
-  "meta-llama/llama-3.3-8b-instruct:free"
+  "deepseek/deepseek-chat-v3-0324:free"
 ];
 
 function normalizeAIReply(
@@ -102,7 +100,7 @@ async function makeRequest({
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 20000);
+    }, 8000);
 
   try {
     const messages = [
