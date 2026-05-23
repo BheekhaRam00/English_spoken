@@ -60,8 +60,12 @@ type OpenRouterResponse = {
 const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
-const MODELS = [
-  "openai/gpt-oss-20b:free"
+ const MODELS = [
+  "openai/gpt-oss-20b:free",
+
+  "qwen/qwen3-32b:free",
+
+  "mistralai/mistral-small-3.1-24b-instruct:free"
 ];
 const RECENT_LESSONS =
   new Map<
@@ -128,7 +132,7 @@ async function requestLesson(
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 15000);
+    }, 20000);
 
   try {
     console.log(
