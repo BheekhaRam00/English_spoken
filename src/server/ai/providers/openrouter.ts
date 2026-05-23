@@ -49,15 +49,21 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 /*
-STABLE FREE MODELS
+HYBRID STABLE MODELS
+FIRST 2 = MOST STABLE
 */
 const MODELS = [
   "openai/gpt-oss-20b:free",
 
   "qwen/qwen3-32b:free",
 
-  "mistralai/mistral-small-3.1-24b-instruct:free"
+  "mistralai/mistral-small-3.1-24b-instruct:free",
+
+  "google/gemma-2-9b-it:free",
+
+  "microsoft/phi-3-mini-128k-instruct:free"
 ];
+
 function normalizeAIReply(
   text: string
 ) {
@@ -101,7 +107,7 @@ async function makeRequest({
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 20000);
+    }, 25000);
 
   try {
     const messages = [
@@ -175,21 +181,15 @@ IMPORTANT RULES:
 
             messages,
 
-            temperature: 0.8,
+            temperature: 0.7,
 
-            max_tokens: 150
+            top_p: 0.9,
+
+            max_tokens: 160
           })
         }
       );
 
-    console.log(
-      "OPENROUTER STATUS:",
-      response.status
-    );
-
-    /*
-    RAW RESPONSE FIRST
-    */
     const rawText =
       await response.text();
 
@@ -206,18 +206,11 @@ IMPORTANT RULES:
         JSON.parse(
           rawText
         );
-    } catch (
-      parseError
-    ) {
+    } catch {
       throw new Error(
-        "Invalid JSON response from OpenRouter"
+        `Invalid JSON response from ${model}`
       );
     }
-
-    console.log(
-      "OPENROUTER DATA:",
-      JSON.stringify(data)
-    );
 
     if (!response.ok) {
       throw new Error(
@@ -264,6 +257,47 @@ export async function callOpenRouter({
       mode
     );
 
+  /*
+  PARALLEL PRIMARY REQUESTS
+  */
+  const primaryModels =
+    MODELS.slice(0, 2);
+
+  try {
+    const parallelResult =
+      await Promise.any(
+        primaryModels.map(
+          (model) =>
+            makeRequest({
+              apiKey,
+
+              model,
+
+              systemPrompt,
+
+              message,
+
+              history
+            })
+        )
+      );
+
+    if (
+      parallelResult &&
+      parallelResult.trim()
+    ) {
+      return parallelResult;
+    }
+  } catch (parallelError) {
+    console.log(
+      "PARALLEL MODELS FAILED",
+      parallelError
+    );
+  }
+
+  /*
+  SEQUENTIAL HYBRID FALLBACK
+  */
   let lastError:
     unknown = null;
 
@@ -310,6 +344,8 @@ export async function callOpenRouter({
   );
 
   throw new Error(
-    "All AI providers failed."
+    `All AI providers failed: ${String(
+      lastError
+    )}`
   );
 }
