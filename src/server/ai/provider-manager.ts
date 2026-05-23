@@ -60,9 +60,6 @@ export async function requestAICompletion({
   mode,
   apiKey
 }: RequestAICompletionParams) {
-  /*
-  CLEAN INPUT
-  */
   const cleanedMessage =
     cleanAIText(
       message
@@ -76,9 +73,6 @@ export async function requestAICompletion({
     );
   }
 
-  /*
-  DEBUG
-  */
   console.log(
     "REQUEST AI MODE:",
     mode
@@ -89,9 +83,6 @@ export async function requestAICompletion({
     cleanedMessage
   );
 
-  /*
-  OPENROUTER
-  */
   try {
     const openRouterReply =
       await callOpenRouter({
@@ -130,9 +121,6 @@ export async function requestAICompletion({
 
     return cleanedReply;
   } catch (error: any) {
-    /*
-    IMPORTANT DEBUG
-    */
     console.log(
       "OPENROUTER FAILED:"
     );
@@ -146,7 +134,7 @@ export async function requestAICompletion({
   }
 
   /*
-  FALLBACK
+  EMERGENCY MOCK FALLBACK
   */
   console.log(
     "USING MOCK PROVIDER FALLBACK"
