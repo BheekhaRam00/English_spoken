@@ -155,9 +155,6 @@ export async function POST(
       `Chat request received: ${cleanedMessage}`
     );
 
-    /*
-    NO API KEY
-    */
     if (
       !env.OPENROUTER_API_KEY
     ) {
@@ -190,9 +187,6 @@ export async function POST(
       );
     }
 
-    /*
-    AI REQUEST
-    */
     let aiReply = "";
 
     try {
@@ -240,17 +234,11 @@ export async function POST(
       );
     }
 
-    /*
-    CLEAN RESPONSE
-    */
     const cleanedReply =
       cleanAIText(
         aiReply
       ).trim();
 
-    /*
-    EMPTY RESPONSE
-    */
     if (!cleanedReply) {
       return NextResponse.json(
         {
@@ -276,9 +264,6 @@ export async function POST(
       );
     }
 
-    /*
-    SUCCESS
-    */
     return NextResponse.json(
       {
         success: true,
