@@ -61,9 +61,7 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 const MODELS = [
-  "openai/gpt-oss-20b:free",
-
-  "deepseek/deepseek-chat-v3-0324:free"
+  "openai/gpt-oss-20b:free"
 ];
 const RECENT_LESSONS =
   new Map<
@@ -130,7 +128,7 @@ async function requestLesson(
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 8000);
+    }, 15000);
 
   try {
     console.log(
