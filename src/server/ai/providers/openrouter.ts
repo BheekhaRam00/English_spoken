@@ -52,11 +52,8 @@ const OPENROUTER_URL =
 STABLE FREE MODELS
 */
 const MODELS = [
-  "openai/gpt-oss-20b:free",
-
-  "deepseek/deepseek-chat-v3-0324:free"
+  "openai/gpt-oss-20b:free"
 ];
-
 function normalizeAIReply(
   text: string
 ) {
@@ -100,7 +97,7 @@ async function makeRequest({
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 8000);
+    }, 15000);
 
   try {
     const messages = [
