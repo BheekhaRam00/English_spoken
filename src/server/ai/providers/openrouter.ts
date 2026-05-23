@@ -52,7 +52,11 @@ const OPENROUTER_URL =
 STABLE FREE MODELS
 */
 const MODELS = [
-  "openai/gpt-oss-20b:free"
+  "openai/gpt-oss-20b:free",
+
+  "qwen/qwen3-32b:free",
+
+  "mistralai/mistral-small-3.1-24b-instruct:free"
 ];
 function normalizeAIReply(
   text: string
@@ -97,7 +101,7 @@ async function makeRequest({
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 15000);
+    }, 20000);
 
   try {
     const messages = [
