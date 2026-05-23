@@ -61,11 +61,11 @@ const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
 const MODELS = [
-  "google/gemma-2-9b-it:free",
+  "openai/gpt-oss-20b:free",
 
-  "microsoft/phi-3-mini-128k-instruct:free",
+  "deepseek/deepseek-chat-v3-0324:free",
 
-  "meta-llama/llama-3.2-3b-instruct:free"
+  "meta-llama/llama-3.3-8b-instruct:free"
 ];
 
 const RECENT_LESSONS =
