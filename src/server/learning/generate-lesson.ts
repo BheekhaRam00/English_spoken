@@ -63,11 +63,8 @@ const OPENROUTER_URL =
 const MODELS = [
   "openai/gpt-oss-20b:free",
 
-  "deepseek/deepseek-chat-v3-0324:free",
-
-  "meta-llama/llama-3.3-8b-instruct:free"
+  "deepseek/deepseek-chat-v3-0324:free"
 ];
-
 const RECENT_LESSONS =
   new Map<
     string,
@@ -133,7 +130,7 @@ async function requestLesson(
   const timeout =
     setTimeout(() => {
       controller.abort();
-    }, 20000);
+    }, 8000);
 
   try {
     console.log(
