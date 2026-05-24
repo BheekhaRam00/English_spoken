@@ -296,12 +296,16 @@ export async function callOpenRouter({
   }
 
   /*
-  SEQUENTIAL HYBRID FALLBACK
-  */
-  let lastError:
-    unknown = null;
+SEQUENTIAL BACKUP MODELS
+ONLY UNUSED MODELS
+*/
+let lastError:
+  unknown = null;
 
-  for (const model of MODELS) {
+const backupModels =
+  MODELS.slice(2);
+
+for (const model of backupModels) {
     try {
       const response =
         await makeRequest({
